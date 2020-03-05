@@ -1,0 +1,188 @@
+# -*- coding: utf-8 -*-
+
+import flask
+import json
+import route
+
+from sqlalchemy import func, and_
+
+from handler.log import api_logger
+from handler.pool import mysqlpool
+
+from route.api.plan import api_plan
+
+from model.mysql import model_mysql_planinfo
+from model.mysql import model_mysql_plancase
+from model.mysql import model_mysql_planversion
+from model.mysql import model_mysql_userinfo
+from model.redis import model_redis_userinfo
+
+"""
+    获取个人测试计划基础信息-api路由
+    ----校验
+            校验账户是否存在
+            校验账户操作令牌
+            校验账户所属角色是否有API操作权限
+            校验传参
+    ----操作
+            判断测试计划是否存在
+            返回测试计划基础信息
+"""
+
+
+@api_plan.route('/getPersonalPlanInfo.json', methods=["post"])
+@route.check_user
+@route.check_token
+@route.check_auth
+@route.check_post_parameter(
+    ['planId', int, 1, None]
+)
+def get_personal_plan_info():
+    # 初始化返回内容
+    response_json = {
+        "error_code": 200,
+        "error_msg": "操作成功",
+        "data": {
+            "id": 0,
+            "title": "",
+            "description": "",
+            "type": 0,
+            "openLevel": 0,
+            "addTime": None,
+            "workTableStatus": False,
+            "forkCount": 0,
+            "version": {
+                "count": 0,
+                "list": []
+            },
+            "caseCount": 0,
+            "contributorCount": 0
+        }
+    }
+
+    request_user_id = None
+    plan_user_id = None
+    # 取出入参
+    request_head_mail = flask.request.headers['Mail']
+    plan_id = flask.request.json['planId']
+
+    # 查询测试计划基础信息，并取出所属者账户id
+    try:
+        mysql_plan_info = model_mysql_planinfo.query.filter(
+            model_mysql_planinfo.planId == plan_id
+        ).first()
+    except Exception as e:
+        api_logger.error("PlanId=" + plan_id + "的model_mysql_planinfo数据读取失败，失败原因：" + repr(e))
+        return route.error_msgs['msg_db_error']
+    else:
+        if mysql_plan_info is None:
+            return route.error_msgs['msg_no_plan']
+        else:
+            plan_user_id = mysql_plan_info.ownerId
+            response_json['data']['id'] = mysql_plan_info.planId
+            response_json['data']['title'] = mysql_plan_info.planTitle
+            response_json['data']['description'] = mysql_plan_info.planDescription
+            response_json['data']['type'] = mysql_plan_info.planType
+            response_json['data']['addTime'] = str(mysql_plan_info.planAddTime)
+            response_json['data']['openLevel'] = mysql_plan_info.planOpenLevel
+
+    # 查询缓存中账户信息，并取出账户id
+    redis_userinfo = model_redis_userinfo.query(user_email=request_head_mail)
+    # 如果缓存中没查到，则查询mysql
+    if redis_userinfo is None:
+        try:
+            mysql_userinfo = model_mysql_userinfo.query.filter(
+                model_mysql_userinfo.userEmail == request_head_mail
+            ).first()
+            api_logger.debug("Mail=" + request_head_mail + "的model_redis_userinfo信息读取成功")
+        except Exception as e:
+            api_logger.error("Mail=" + request_head_mail + "的model_redis_userinfo信息读取失败，失败原因：" + repr(e))
+            return route.error_msgs['msg_db_error']
+        else:
+            if mysql_userinfo is None:
+                return route.error_msgs['msg_no_user']
+            else:
+                request_user_id = mysql_userinfo.userId
+    else:
+        # 格式化缓存基础信息内容
+        try:
+            redis_userinfo_json = json.loads(redis_userinfo.decode("utf8"))
+            api_logger.debug("Mail=" + request_head_mail + "的缓存账户数据json格式化成功")
+        except Exception as e:
+            api_logger.error("Mail=" + request_head_mail + "的缓存账户数据json格式化失败，失败原因：" + repr(e))
+            return route.error_msgs['msg_json_format_fail']
+        else:
+            request_user_id = redis_userinfo_json['userId']
+
+    # 根据测试计划开放级别以及操作者id/计划拥有者id判断返回内容
+    if request_user_id == plan_user_id:
+        pass
+    else:
+        if mysql_plan_info.planOpenLevel in (1, 2):
+            pass
+        else:
+            return route.error_msgs['msg_plan_notopen']
+
+    # 查询测试计划被复制次数
+    try:
+        mysql_fork_count = mysqlpool.session.query(
+            func.count(model_mysql_planinfo.planId).label("forkCount")
+        ).filter(
+            model_mysql_planinfo.forkFrom == plan_id
+        ).first()
+    except Exception as e:
+        api_logger.error("PlanId=" + plan_id + "的model_mysql_planinfo数据读取失败，失败原因：" + repr(e))
+        return route.error_msgs['msg_db_error']
+    else:
+        response_json['data']['forkCount'] = mysql_fork_count.forkCount
+
+    # 查询测试计划下版本
+    try:
+        mysql_version = model_mysql_planversion.query.filter(
+            model_mysql_planversion.planId == plan_id
+        ).order_by(
+            model_mysql_planversion.versionAddTime.desc(),
+            model_mysql_planversion.versionId.desc()
+        ).all()
+    except Exception as e:
+        api_logger.error("PlanId=" + plan_id + "的model_mysql_planversion数据读取失败，失败原因：" + repr(e))
+        return route.error_msgs['msg_db_error']
+    else:
+        count = 0
+        for version in mysql_version:
+            if version.isTemporary == 0:
+                count += 1
+                # noinspection PyTypeChecker
+                response_json['data']['version']['list'].append({
+                    'id': version.versionId,
+                    'title': version.versionTitle,
+                    'description': version.versionDescription,
+                    'addTime': str(version.versionAddTime)
+                })
+            elif version.isTemporary == 1:
+                response_json['data']['workTableStatus'] = True
+        response_json['data']['version']['count'] = count
+
+    # 查询测试计划下用例条数
+    try:
+        mysql_case_count = mysqlpool.session.query(
+            func.count(model_mysql_plancase.caseId).label("caseCount")
+        ).join(
+            model_mysql_planversion,
+            model_mysql_plancase.versionId == model_mysql_planversion.versionId
+        ).filter(
+            and_(
+                model_mysql_planversion.planId == plan_id,
+                model_mysql_planversion.isTemporary == 0
+            )
+        ).first()
+    except Exception as e:
+        api_logger.error("PlanId=" + plan_id + "的用例总条数数据读取失败，失败原因：" + repr(e))
+        return route.error_msgs['msg_db_error']
+    else:
+        response_json['data']['caseCount'] = mysql_case_count.caseCount
+
+    # 查询测试计划下贡献者数量（后期完成）
+
+    # 最后返回内容
+    return json.dumps(response_json)
