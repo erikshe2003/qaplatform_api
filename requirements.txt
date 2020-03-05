@@ -1,0 +1,10 @@
+sqlalchemy
+Flask
+Flask-SQLAlchemy
+gevent
+gunicorn
+PyMySQL
+redis
+pillow
+Flask-Sockets
+numba
