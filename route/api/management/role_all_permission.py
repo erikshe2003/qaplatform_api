@@ -3,7 +3,7 @@
 
 from flask_restful import Resource
 
-from .role_all_permission_restful.get import role_all_permission_get
+from .restful_role_all_permission.get import role_all_permission_get
 
 
 class RoleAllPermission(Resource):
