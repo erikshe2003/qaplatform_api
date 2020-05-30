@@ -2,14 +2,11 @@
 
 import flask
 import route
-import json
 
 from sqlalchemy import func
 
 from handler.log import api_logger
 from handler.pool import mysqlpool
-
-from route.api.management.role import api_management_role
 
 from model.mysql import model_mysql_roleinfo
 
@@ -18,15 +15,14 @@ from model.mysql import model_mysql_roleinfo
 """
 
 
-@api_management_role.route('/getRoleInfoList.json', methods=["post"])
 @route.check_token
 @route.check_user
 @route.check_auth
-@route.check_post_parameter(
+@route.check_get_parameter(
     ['page_num', int, 0, None],
     ['per_page', int, 0, None]
 )
-def get_role_info_list():
+def role_info_list_get():
     # 初始化返回内容
     response_json = {
         "error_code": 200,
@@ -38,8 +34,8 @@ def get_role_info_list():
     }
 
     # 取出传入参数值
-    page_num = flask.request.json['page_num']
-    per_page = flask.request.json['per_page']
+    page_num = int(flask.request.args['page_num'])
+    per_page = int(flask.request.args['per_page'])
 
     # 查询角色，包括id/name/canmanage
     # 根据角色id，查询角色下关联的账户，判断角色是否可删除
@@ -84,5 +80,5 @@ def get_role_info_list():
     # 8.返回成功信息
     response_json["error_msg"] = "操作成功"
     # 最后返回内容
-    return json.dumps(response_json)
+    return response_json
 
