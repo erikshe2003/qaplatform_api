@@ -9,7 +9,9 @@ from .role_info_list import RoleInfoList
 from .role_permission import RolePermission
 from .role_all_permission import RoleAllPermission
 
+from .user import User
 from .user_list import UserList
+from .user_status import UserStatus
 
 api_management = Blueprint('api_management', __name__)
 api = Api(api_management)
@@ -19,4 +21,6 @@ api.add_resource(RoleInfoList, '/roleInfoList.json')
 api.add_resource(RolePermission, '/rolePermission.json')
 api.add_resource(RoleAllPermission, '/roleAllPermission.json')
 
+api.add_resource(User, '/user.json')
 api.add_resource(UserList, '/userList.json')
+api.add_resource(UserStatus, '/userStatus.json')

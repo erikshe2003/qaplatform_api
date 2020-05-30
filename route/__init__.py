@@ -29,6 +29,7 @@ error_msgs = {
         'msg_new_password_inconformity': {"error_code": 201, "error_msg": "两次密码不一致", "data": {}},
         'msg_need_register': {"error_code": 201, "error_msg": "账户未激活", "data": {}},
         'msg_no_user': {"error_code": 201, "error_msg": "账户不存在", "data": {}},
+        'msg_no_role': {"error_code": 201, "error_msg": "角色不存在", "data": {}},
         'msg_no_plan': {"error_code": 201, "error_msg": "测试计划不存在", "data": {}},
         'msg_no_test_task': {"error_code": 201, "error_msg": "无测试任务", "data": {}},
         'msg_no_assign': {"error_code": 201, "error_msg": "无分配记录", "data": {}},
@@ -46,12 +47,15 @@ error_msgs = {
         'msg_plan_user_error': {"error_code": 201, "error_msg": "您不是这个测试计划的所有者", "data": {}},
         'msg_plantype_error': {"error_code": 201, "error_msg": "自动化功能测试任务不支持查看此报告", "data": {}},
         'msg_request_file_oversize': {"error_code": 201, "error_msg": "文件大小超出规定", "data": {}},
+        'msg_role_is_admin': {"error_code": 201, "error_msg": "管理员角色禁止操作", "data": {}},
         'msg_status_error': {"error_code": 201, "error_msg": "账户状态异常", "data": {}},
         'msg_too_early': {"error_code": 201, "error_msg": "测试任务开始时间不能小于当前时间", "data": {}},
         'msg_token_wrong': {"error_code": 201, "error_msg": "Token校验失败", "data": {}},
         'msg_token_expired': {"error_code": 201, "error_msg": "Token过期", "data": {}},
         'msg_tasktype_error': {"error_code": 201, "error_msg": "调试任务不支持查看此报告", "data": {}},
         'msg_task_time_error': {"error_code": 201, "error_msg": "测试任务结束时间不能小于开始时间且相隔不能小于10s", "data": {}},
+        'msg_user_is_admin': {"error_code": 201, "error_msg": "管理员账号禁止操作", "data": {}},
+        'msg_user_cannot_operate': {"error_code": 201, "error_msg": "用户账号禁止操作", "data": {}},
         'msg_worker_not_exist': {"error_code": 201, "error_msg": "worker不存在", "data": {}}
     },
     301: {
@@ -65,6 +69,7 @@ error_msgs = {
     },
     500: {
         'msg_db_error': {"error_code": 500, "error_msg": "数据查询失败", "data": {}},
+        'msg_redis_error': {"error_code": 500, "error_msg": "缓存处理失败", "data": {}},
         'msg_db_update_error': {"error_code": 500, "error_msg": "数据更新失败", "data": {}},
         'msg_json_format_fail': {"error_code": 500, "error_msg": "缓存处理失败", "data": {}},
         'msg_no_worker': {"error_code": 500, "error_msg": "当前无可用worker", "data": {}},
