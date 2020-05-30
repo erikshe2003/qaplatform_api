@@ -11,8 +11,6 @@ from handler.api.check import ApiCheck
 from handler.log import api_logger, db_logger
 from handler.pool import mysqlpool
 
-from route.api.management.role import api_management_role
-
 from model.mysql import model_mysql_roleinfo
 from model.mysql import model_mysql_rolepermission
 from model.mysql import model_mysql_functioninfo
@@ -23,22 +21,26 @@ from model.redis import model_redis_rolepermission
 from model.redis import model_redis_apiauth
 
 
-"""
-    修改角色配置信息-api路由
-    ----校验
-    1.校验传参
-    2.校验账户是否存在
-    3.校验账户操作令牌
-    4.校验角色是否存在
-    5.校验角色权限是否可变更
-    ----操作
-    6.mysql逐条变更角色权限
-    7.刷新redis中的该角色的权限缓存数据
-"""
-
-
-@api_management_role.route('/setRolePermission.json', methods=["post"])
-def set_role_permission():
+@route.check_user
+@route.check_token
+@route.check_auth
+@route.check_post_parameter(
+    ['role_id', int, 1, None],
+    ['role_description', str, 0, 200]
+)
+def role_permission_put():
+    """
+        修改角色配置信息-api路由
+        ----校验
+        1.校验传参
+        2.校验账户是否存在
+        3.校验账户操作令牌
+        4.校验角色是否存在
+        5.校验角色权限是否可变更
+        ----操作
+        6.mysql逐条变更角色权限
+        7.刷新redis中的该角色的权限缓存数据
+    """
     # 初始化返回内容
     response_json = {
         "error_code": 200,
@@ -50,49 +52,17 @@ def set_role_permission():
         1.校验传参
         取出请求参数
     """
-    try:
-        request_json = flask.request.json
-    except Exception as e:
-        logmsg = "/setRolePermission.json数据格式化失败，失败原因：" + repr(e)
-        api_logger.error(logmsg)
-        return ApiError.requestfail_error("接口数据异常")
-    else:
-        if request_json is None:
-            return ApiError.requestfail_error("接口数据异常")
-    # 检查必传项是否遗留
-    # mail_address
-    if "mail_address" not in request_json:
-        return ApiError.requestfail_nokey("mail_address")
-    # user_token
-    if "user_token" not in request_json:
-        return ApiError.requestfail_nokey("user_token")
-    # role_id
-    if "role_id" not in request_json:
-        return ApiError.requestfail_nokey("role_id")
-    # role_description
-    if "role_description" not in request_json:
-        return ApiError.requestfail_nokey("role_description")
+    requestvalue_roleid = int(flask.request.json["role_id"])
+    requestvalue_roledescription = flask.request.json["role_description"]
     # role_permission
-    if "role_permission" not in request_json:
+    if "role_permission" not in flask.request.json:
         return ApiError.requestfail_nokey("role_permission")
+    requestvalue_permission = flask.request.json["role_permission"]
+    
     # 检查通过
     # 检查必传项内容格式
-    # mail_address
-    if type(request_json["mail_address"]) is not str or len(request_json["mail_address"]) > 100:
-        return ApiError.requestfail_value("mail_address")
-    if re.search("^[0-9a-zA-Z_]{1,100}@fclassroom.com$", request_json["mail_address"]) is None:
-        return ApiError.requestfail_value("mail_address")
-    # record_code
-    if type(request_json["user_token"]) is not str or len(request_json["user_token"]) > 100:
-        return ApiError.requestfail_value("user_token")
-    # role_id
-    if type(request_json["role_id"]) is not int or request_json["role_id"] < 1:
-        return ApiError.requestfail_value("role_id")
-    # role_description
-    if type(request_json["role_description"]) is not str or len(request_json["role_description"]) > 200:
-        return ApiError.requestfail_value("role_description")
     # role_permission
-    if type(request_json["role_permission"]) is not dict:
+    if type(requestvalue_permission) is not dict:
         return ApiError.requestfail_value("role_permission")
     """
         检查role_permission格式
@@ -102,106 +72,38 @@ def set_role_permission():
         # 4.子dict的component为dict
         # 5.子dict的component中的dict内至少包含id/has，用以更新权限数据
     """
-    for rp in request_json["role_permission"]:
-        if type(request_json["role_permission"][rp]) is not dict:
+    for rp in requestvalue_permission:
+        if type(requestvalue_permission[rp]) is not dict:
             return ApiError.requestfail_value("role_permission")
-        if "id" not in request_json["role_permission"][rp] or type(
-                request_json["role_permission"][rp]["id"]
-        ) is not int or request_json["role_permission"][rp]["id"] < 1:
+        if "id" not in requestvalue_permission[rp] or type(
+                requestvalue_permission[rp]["id"]
+        ) is not int or requestvalue_permission[rp]["id"] < 1:
             return ApiError.requestfail_value("role_permission")
-        if "has" not in request_json["role_permission"][rp] or type(
-                request_json["role_permission"][rp]["has"]) is not bool:
+        if "has" not in requestvalue_permission[rp] or type(
+                requestvalue_permission[rp]["has"]) is not bool:
             return ApiError.requestfail_value("role_permission")
-        if type(request_json["role_permission"][rp]["component"]) is not dict:
+        if type(requestvalue_permission[rp]["component"]) is not dict:
             return ApiError.requestfail_value("role_permission")
         cf = ApiCheck.check_function(rp, 0)
         if cf['exist'] is False:
             return ApiError.requestfail_value("role_permission")
         elif cf['exist'] is None:
             return ApiError.requestfail_error("角色权限信息校验异常")
-        for rpc in request_json["role_permission"][rp]["component"]:
-            if type(request_json["role_permission"][rp]["component"][rpc]) is not dict:
+        for rpc in requestvalue_permission[rp]["component"]:
+            if type(requestvalue_permission[rp]["component"][rpc]) is not dict:
                 return ApiError.requestfail_value("role_permission")
-            if "id" not in request_json["role_permission"][rp]["component"][rpc] or type(
-                    request_json["role_permission"][rp]["component"][rpc]["id"]
-            ) is not int or request_json["role_permission"][rp]["component"][rpc]["id"] < 1:
+            if "id" not in requestvalue_permission[rp]["component"][rpc] or type(
+                    requestvalue_permission[rp]["component"][rpc]["id"]
+            ) is not int or requestvalue_permission[rp]["component"][rpc]["id"] < 1:
                 return ApiError.requestfail_value("role_permission")
-            if "has" not in request_json["role_permission"][rp]["component"][rpc] or type(
-                    request_json["role_permission"][rp]["component"][rpc]["has"]) is not bool:
+            if "has" not in requestvalue_permission[rp]["component"][rpc] or type(
+                    requestvalue_permission[rp]["component"][rpc]["has"]) is not bool:
                 return ApiError.requestfail_value("role_permission")
             cf = ApiCheck.check_function(rpc, rp)
             if cf['exist'] is False:
                 return ApiError.requestfail_value("role_permission")
             elif cf['exist'] is None:
                 return ApiError.requestfail_error("角色权限信息校验异常")
-
-    # 取出传入参数值
-    requestvalue_mail = request_json["mail_address"]
-    requestvalue_token = request_json["user_token"]
-    requestvalue_roleid = request_json["role_id"]
-    requestvalue_roledescription = request_json["role_description"]
-    requestvalue_permission = request_json["role_permission"]
-
-    """
-        2.校验账户是否存在
-    """
-    userdata = ApiCheck.check_user(requestvalue_mail)
-    if userdata["exist"] is False:
-        return ApiError.requestfail_error("账户不存在")
-    elif userdata["exist"] is True and userdata["userStatus"] == 0:
-        return ApiError.requestfail_error("账户未激活")
-    elif userdata["exist"] is True and userdata["userStatus"] == 1:
-        pass
-    elif userdata["exist"] is True and userdata["userStatus"] == -1:
-        return ApiError.requestfail_error("账户已禁用")
-    else:
-        return ApiError.requestfail_error("账户信息校验异常")
-
-    """
-        3.校验令牌是否有效
-    """
-    tc = ApiCheck.check_token(
-        requestvalue_mail,
-        requestvalue_token
-    )
-    if tc["exist"] is True and tc["valid"] is True:
-        pass
-    elif tc["exist"] is True and tc["valid"] is False:
-        return ApiError.requestfail_error("token已过期")
-    elif tc["exist"] is False:
-        return ApiError.requestfail_error("token错误")
-    else:
-        return ApiError.requestfail_server("token校验失败")
-
-    # 4.校验账户所属角色是否具有后端权限
-    cr = ApiCheck.check_auth(
-        roleid=userdata["userRoleId"],
-        apiurl="setRolePermission.json"
-    )
-    if cr["exist"] is True and cr["pass"] is True:
-        pass
-    elif cr["exist"] is True and cr["pass"] is False:
-        return ApiError.requestfail_error("账户所属角色无访问权限")
-    elif cr["exist"] is False:
-        return ApiError.requestfail_error("账户所属角色不存在")
-    else:
-        return ApiError.requestfail_error("角色权限配置校验异常")
-
-    """ 
-        4.校验角色是否存在
-        5.校验角色权限是否可变更
-    """
-    cr = ApiCheck.check_role(
-        requestvalue_roleid
-    )
-    if cr["exist"] is True and cr["roleCanManage"] is True:
-        pass
-    elif cr["exist"] is True and cr["roleCanManage"] is False:
-        return ApiError.requestfail_error("角色禁止修改权限")
-    elif cr["exist"] is False:
-        return ApiError.requestfail_error("角色不存在")
-    else:
-        return ApiError.requestfail_server("角色查询失败")
 
     """
         6.mysql逐条变更角色权限
@@ -382,7 +284,7 @@ def set_role_permission():
         mysqlpool.session.commit()
     except Exception as e:
         db_logger.error("数据库中角色的更新时间更新失败：" + repr(e))
-        return route.error_msgs['msg_db_update_error']
+        return route.error_msgs[500]['msg_db_update_error']
 
     """
         7.刷新redis中的该角色的权限缓存数据
@@ -522,5 +424,4 @@ def set_role_permission():
     # 8.返回成功信息
     response_json["error_msg"] = "操作成功"
     # 最后返回内容
-    return json.dumps(response_json)
-
+    return response_json

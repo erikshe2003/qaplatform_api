@@ -22,43 +22,55 @@ from model.mysql import model_mysql_functionorg
 
 # 201请求错误/301传参非法/500系统异常
 error_msgs = {
-    'msg_old_password_incorrect': json.dumps({"error_code": 201, "error_msg": "旧密码输入错误", "data": {}}),
-    'msg_new_password_inconformity': json.dumps({"error_code": 201, "error_msg": "两次密码不一致", "data": {}}),
-    'msg_no_user': json.dumps({"error_code": 201, "error_msg": "账户不存在", "data": {}}),
-    'msg_no_plan': json.dumps({"error_code": 201, "error_msg": "测试计划不存在", "data": {}}),
-    'msg_no_test_task': json.dumps({"error_code": 201, "error_msg": "无测试任务", "data": {}}),
-    'msg_no_assign': json.dumps({"error_code": 201, "error_msg": "无分配记录", "data": {}}),
-    'msg_no_table': json.dumps({"error_code": 201, "error_msg": "测试计划工作台无内容", "data": {}}),
-    'msg_too_early': json.dumps({"error_code": 201, "error_msg": "测试任务开始时间不能小于当前时间", "data": {}}),
-    'msg_worker_not_exist': json.dumps({"error_code": 201, "error_msg": "worker不存在", "data": {}}),
-    'msg_no_case': json.dumps({"error_code": 201, "error_msg": "测试用例不存在", "data": {}}),
-    'msg_no_version': json.dumps({"error_code": 201, "error_msg": "未找到测试计划的版本", "data": {}}),
-    'msg_no_plan_type': json.dumps({"error_code": 201, "error_msg": "测试计划类型不存在", "data": {}}),
-    'msg_no_task': json.dumps({"error_code": 201, "error_msg": "任务不存在", "data": {}}),
-    'msg_plan_notopen': json.dumps({"error_code": 201, "error_msg": "测试计划未开放", "data": {}}),
-    'msg_plan_user_error': json.dumps({"error_code": 201, "error_msg": "您不是这个测试计划的所有者", "data": {}}),
-    'msg_data_error': json.dumps({"error_code": 201, "error_msg": "数据非法", "data": {}}),
-    'msg_task_time_error': json.dumps({"error_code": 201, "error_msg": "测试任务结束时间不能小于开始时间且相隔不能小于10s", "data": {}}),
-    'msg_no_role_auth_data': json.dumps({"error_code": 201, "error_msg": "账户所属角色无权限数据", "data": {}}),
-    'msg_be_forbidden': json.dumps({"error_code": 201, "error_msg": "账户已禁用", "data": {}}),
-    'msg_no_auth': json.dumps({"error_code": 201, "error_msg": "账户无访问权限", "data": {}}),
-    'msg_status_error': json.dumps({"error_code": 201, "error_msg": "账户状态异常", "data": {}}),
-    'msg_need_register': json.dumps({"error_code": 201, "error_msg": "账户未激活", "data": {}}),
-    'msg_before_login': json.dumps({"error_code": 201, "error_msg": "请先登录账号", "data": {}}),
-    'msg_token_wrong': json.dumps({"error_code": 201, "error_msg": "Token校验失败", "data": {}}),
-    'msg_token_expired': json.dumps({"error_code": 201, "error_msg": "Token过期", "data": {}}),
-    'msg_request_body_not_json': json.dumps({"error_code": 301, "error_msg": "传参格式非法", "data": {}}),
-    'msg_request_body_not_url_args': json.dumps({"error_code": 301, "error_msg": "传参格式非法", "data": {}}),
-    'msg_value_type_error': json.dumps({"error_code": 301, "error_msg": "传参格式非法", "data": {}}),
-    'msg_lack_keys': json.dumps({"error_code": 302, "error_msg": "缺少必传参数", "data": {}}),
-    'msg_json_format_fail': json.dumps({"error_code": 500, "error_msg": "缓存处理失败", "data": {}}),
-    'msg_db_error': json.dumps({"error_code": 500, "error_msg": "数据查询失败", "data": {}}),
-    'msg_db_update_error': json.dumps({"error_code": 500, "error_msg": "数据更新失败", "data": {}}),
-    'msg_tasktype_error': json.dumps({"error_code": 201, "error_msg": "调试任务不支持查看此报告", "data": {}}),
-    'msg_plantype_error': json.dumps({"error_code": 201, "error_msg": "自动化功能测试任务不支持查看此报告", "data": {}}),
-    'msg_no_worker': json.dumps({"error_code": 500, "error_msg": "当前无可用worker", "data": {}}),
-    'msg_file_error': json.dumps({"error_code": 500, "error_msg": "文件操作失败", "data": {}}),
-    'msg_deploy_failed': json.dumps({"error_code": 500, "error_msg": "测试任务下发失败，请尽快联系管理员", "data": {}})
+    201: {
+        'msg_before_login': {"error_code": 201, "error_msg": "请先登录账号", "data": {}},
+        'msg_be_forbidden': {"error_code": 201, "error_msg": "账户已禁用", "data": {}},
+        'msg_data_error': {"error_code": 201, "error_msg": "数据非法", "data": {}},
+        'msg_new_password_inconformity': {"error_code": 201, "error_msg": "两次密码不一致", "data": {}},
+        'msg_need_register': {"error_code": 201, "error_msg": "账户未激活", "data": {}},
+        'msg_no_user': {"error_code": 201, "error_msg": "账户不存在", "data": {}},
+        'msg_no_plan': {"error_code": 201, "error_msg": "测试计划不存在", "data": {}},
+        'msg_no_test_task': {"error_code": 201, "error_msg": "无测试任务", "data": {}},
+        'msg_no_assign': {"error_code": 201, "error_msg": "无分配记录", "data": {}},
+        'msg_no_table': {"error_code": 201, "error_msg": "测试计划工作台无内容", "data": {}},
+        'msg_no_case': {"error_code": 201, "error_msg": "测试用例不存在", "data": {}},
+        'msg_no_version': {"error_code": 201, "error_msg": "未找到测试计划的版本", "data": {}},
+        'msg_no_data': {"error_code": 201, "error_msg": "缺少快照数据", "data": {}},
+        'msg_no_plan_type': {"error_code": 201, "error_msg": "测试计划类型不存在", "data": {}},
+        'msg_no_role_auth_data': {"error_code": 201, "error_msg": "账户所属角色无权限数据", "data": {}},
+        'msg_no_task': {"error_code": 201, "error_msg": "任务不存在", "data": {}},
+        'msg_no_auth': {"error_code": 201, "error_msg": "账户无访问权限", "data": {}},
+        'msg_not_temporary': {"error_code": 201, "error_msg": "非临时版本", "data": {}},
+        'msg_old_password_incorrect': {"error_code": 201, "error_msg": "旧密码输入错误", "data": {}},
+        'msg_plan_notopen': {"error_code": 201, "error_msg": "测试计划未开放", "data": {}},
+        'msg_plan_user_error': {"error_code": 201, "error_msg": "您不是这个测试计划的所有者", "data": {}},
+        'msg_plantype_error': {"error_code": 201, "error_msg": "自动化功能测试任务不支持查看此报告", "data": {}},
+        'msg_request_file_oversize': {"error_code": 201, "error_msg": "文件大小超出规定", "data": {}},
+        'msg_status_error': {"error_code": 201, "error_msg": "账户状态异常", "data": {}},
+        'msg_too_early': {"error_code": 201, "error_msg": "测试任务开始时间不能小于当前时间", "data": {}},
+        'msg_token_wrong': {"error_code": 201, "error_msg": "Token校验失败", "data": {}},
+        'msg_token_expired': {"error_code": 201, "error_msg": "Token过期", "data": {}},
+        'msg_tasktype_error': {"error_code": 201, "error_msg": "调试任务不支持查看此报告", "data": {}},
+        'msg_task_time_error': {"error_code": 201, "error_msg": "测试任务结束时间不能小于开始时间且相隔不能小于10s", "data": {}},
+        'msg_worker_not_exist': {"error_code": 201, "error_msg": "worker不存在", "data": {}}
+    },
+    301: {
+        'msg_request_params_illegal': {"error_code": 301, "error_msg": "传参格式非法", "data": {}},
+        'msg_request_body_not_json': {"error_code": 301, "error_msg": "传参格式非法", "data": {}},
+        'msg_request_body_not_url_args': {"error_code": 301, "error_msg": "传参格式非法", "data": {}},
+        'msg_value_type_error': {"error_code": 301, "error_msg": "传参格式非法", "data": {}}
+    },
+    302: {
+        'msg_request_params_incomplete': {"error_code": 302, "error_msg": "缺少必传参数", "data": {}}
+    },
+    500: {
+        'msg_db_error': {"error_code": 500, "error_msg": "数据查询失败", "data": {}},
+        'msg_db_update_error': {"error_code": 500, "error_msg": "数据更新失败", "data": {}},
+        'msg_json_format_fail': {"error_code": 500, "error_msg": "缓存处理失败", "data": {}},
+        'msg_no_worker': {"error_code": 500, "error_msg": "当前无可用worker", "data": {}},
+        'msg_file_error': {"error_code": 500, "error_msg": "文件操作失败", "data": {}},
+        'msg_deploy_failed': {"error_code": 500, "error_msg": "测试任务下发失败，请尽快联系管理员", "data": {}}
+    }
 }
 
 
@@ -81,7 +93,7 @@ def check_token(func):
     def wrapper(*args, **kwargs):
         # 首先检查必传参数Mail/Token
         if 'Mail' not in flask.request.headers or 'Token' not in flask.request.headers:
-            return error_msgs['msg_lack_keys']
+            return error_msgs[302]['msg_request_params_incomplete']
         # 然后检查token是否正确
         # 去缓存的token中查询Mail，不存在的话即为从来没登陆过
         # redis查询无错误信息，不作try处理
@@ -89,7 +101,7 @@ def check_token(func):
         tdata = model_redis_usertoken.query(flask.request.headers['Mail'])
         if tdata is None:
             api_logger.debug(flask.request.headers['Mail'] + "的缓存token数据为空")
-            return error_msgs['msg_before_login']
+            return error_msgs[201]['msg_before_login']
         else:
             api_logger.debug(flask.request.headers['Mail'] + "的缓存token数据存在")
             # 格式化缓存基础信息内容
@@ -98,13 +110,13 @@ def check_token(func):
                 api_logger.debug(flask.request.headers['Mail'] + "的缓存token数据json格式化成功")
             except Exception as e:
                 api_logger.error(flask.request.headers['Mail'] + "的缓存token数据json格式化失败，失败原因：" + repr(e))
-                return error_msgs['msg_json_format_fail']
+                return error_msgs[500]['msg_json_format_fail']
             # 判断是否一致且有效
             # 判断是否过期
             if flask.request.headers['Token'] != t["userToken"]:
-                return error_msgs['msg_token_wrong']
+                return error_msgs[201]['msg_token_wrong']
             elif datetime.datetime.strptime(t["validTime"], "%Y-%m-%d %H:%M:%S") < datetime.datetime.now():
-                return error_msgs['msg_token_expired']
+                return error_msgs[201]['msg_token_expired']
         # 检查通过，执行应用逻辑
         return func(*args, **kwargs)
     return wrapper
@@ -130,7 +142,7 @@ def check_user(func):
     def wrapper(*args, **kwargs):
         # 首先检查必传参数Mail/Token
         if 'Mail' not in flask.request.headers:
-            return error_msgs['msg_lack_keys']
+            return error_msgs[302]['msg_request_params_incomplete']
         mail_address = flask.request.headers['Mail']
         api_logger.debug("准备查询" + mail_address + "的缓存账户数据")
         uinfo_redis = model_redis_userinfo.query(user_email=mail_address)
@@ -143,15 +155,15 @@ def check_user(func):
                 api_logger.debug(mail_address + "的缓存账户数据json格式化成功")
             except Exception as e:
                 api_logger.error(mail_address + "的缓存账户数据json格式化失败，失败原因：" + repr(e))
-                return error_msgs['msg_json_format_fail']
+                return error_msgs[500]['msg_json_format_fail']
             else:
                 # 判断账户状态
                 if uinfo["userStatus"] == 0:
-                    return error_msgs['msg_need_register']
+                    return error_msgs[201]['msg_need_register']
                 elif uinfo["userStatus"] == -1:
-                    return error_msgs['msg_be_forbidden']
+                    return error_msgs[201]['msg_be_forbidden']
                 elif uinfo["userStatus"] != 1:
-                    return error_msgs['msg_status_error']
+                    return error_msgs[201]['msg_status_error']
         # 如果缓存中未查询到
         else:
             api_logger.debug(mail_address + "的缓存账户数据为空")
@@ -162,11 +174,11 @@ def check_user(func):
                 api_logger.debug(mail_address + "的账户数据查询成功")
             except Exception as e:
                 api_logger.error(mail_address + "的账户数据查询失败，失败原因：" + repr(e))
-                return error_msgs['msg_db_error']
+                return error_msgs[500]['msg_db_error']
             else:
                 # 如果mysql中未查询到
                 if uinfo_mysql is None:
-                    return error_msgs['msg_no_user']
+                    return error_msgs[201]['msg_no_user']
                 # 如果mysql中查询到了
                 else:
                     # 将需缓存的内容缓存至redis的userInfo
@@ -196,11 +208,11 @@ def check_user(func):
                     )
                     # 判断账户状态
                     if uinfo_mysql.userStatus == 0:
-                        return error_msgs['msg_need_register']
+                        return error_msgs[201]['msg_need_register']
                     elif uinfo_mysql.userStatus == -1:
-                        return error_msgs['msg_be_forbidden']
+                        return error_msgs[201]['msg_be_forbidden']
                     elif uinfo_mysql.userStatus != 1:
-                        return error_msgs['msg_status_error']
+                        return error_msgs[201]['msg_status_error']
         # 检查通过，执行应用逻辑
         return func(*args, **kwargs)
     return wrapper
@@ -240,7 +252,7 @@ def check_auth(func):
                 api_logger.debug(mail_address + "的缓存账户数据json格式化成功")
             except Exception as e:
                 api_logger.error(mail_address + "的缓存账户数据json格式化失败，失败原因：" + repr(e))
-                return error_msgs['msg_db_error']
+                return error_msgs[500]['msg_db_error']
             else:
                 # 取出roleId
                 role_id = redis_userinfo_json['userRoleId']
@@ -256,11 +268,11 @@ def check_auth(func):
                             api_logger.debug(mail_address + "的缓存api访问权限数据json格式化成功")
                         except Exception as e:
                             api_logger.error(mail_address + "的缓存api访问权限数据json格式化失败，失败原因：" + repr(e))
-                            return error_msgs['msg_db_error']
+                            return error_msgs[500]['msg_db_error']
                         else:
                             if api_url.split('/')[-1] in redis_apiauth_json and redis_apiauth_json[api_url.split(
                                     '/')[-1]] != 1:
-                                return error_msgs['msg_no_auth']
+                                return error_msgs[201]['msg_no_auth']
                     # 如果redis中未查询到
                     else:
                         # 尝试去mysql中查询最新的角色权限配置数据
@@ -286,7 +298,7 @@ def check_auth(func):
                         else:
                             # 如果mysql中未查询到
                             if not mysql_role_api_auth:
-                                return error_msgs['msg_no_role_auth_data']
+                                return error_msgs[201]['msg_no_role_auth_data']
                             # 如果mysql中查询到了
                             else:
                                 """
@@ -314,14 +326,14 @@ def check_auth(func):
                                     如果存在，且不为1，则报错
                                 """
                                 if api_url in auth and auth[api_url] != 1:
-                                    return error_msgs['msg_no_auth']
+                                    return error_msgs[201]['msg_no_auth']
                 # 如果role_id为空
                 else:
                     # 无角色，直接返回无权限
-                    return error_msgs['msg_no_auth']
+                    return error_msgs[201]['msg_no_auth']
         else:
             # 无账号信息，直接返回无权限
-            return error_msgs['msg_no_auth']
+            return error_msgs[201]['msg_no_auth']
         # 检查账户所属角色的权限清单
         return func(*args, **kwargs)
     return wrapper
@@ -359,16 +371,16 @@ def check_get_parameter(*keys):
                     request_parameters = flask.request.args
                 except Exception as e:
                     api_logger.error("URL:" + request_url + "格式检查失败，原因：" + repr(e))
-                    return error_msgs['msg_request_body_not_json']
+                    return error_msgs[301]['msg_request_body_not_json']
                 else:
                     if not request_parameters:
-                        return error_msgs['msg_request_body_not_url_args']
+                        return error_msgs[301]['msg_request_body_not_url_args']
                 # 检查必传项目
                 for key in keys:
                     # 1.检查有无
                     # 如果缺少必传项
                     if key[0] not in request_parameters:
-                        return error_msgs['msg_lack_keys']
+                        return error_msgs[302]['msg_request_params_incomplete']
                     else:
                         value = request_parameters[key[0]]
                         # 对于get请求，传入的参数默认都是字符串
@@ -380,41 +392,41 @@ def check_get_parameter(*keys):
                                 ivalue = int(value)
                             except Exception as e:
                                 api_logger.debug("URL:" + request_url + "格式检查失败，原因：" + repr(e))
-                                return error_msgs['msg_value_type_error']
+                                return error_msgs[301]['msg_value_type_error']
                             else:
                                 # 大小
                                 # 如果有最小值和最大值
                                 if key[2] and key[3]:
                                     if ivalue > key[3] or ivalue < key[2]:
                                         api_logger.debug("URL:" + request_url + "格式检查失败，原因：参数%s不在区间范围内" % key[0])
-                                        return error_msgs['msg_value_type_error']
+                                        return error_msgs[301]['msg_value_type_error']
                                 # 如果只有最小值
                                 elif key[2]:
                                     if ivalue < key[2]:
                                         api_logger.debug("URL:" + request_url + "格式检查失败，原因：参数%s小于最小值" % key[0])
-                                        return error_msgs['msg_value_type_error']
+                                        return error_msgs[301]['msg_value_type_error']
                                 # 如果只有最大值
                                 elif key[3]:
                                     if ivalue > key[3]:
                                         api_logger.debug("URL:" + request_url + "格式检查失败，原因：参数%s超出最大值" % key[0])
-                                        return error_msgs['msg_value_type_error']
+                                        return error_msgs[301]['msg_value_type_error']
                         elif key[1] is str:
                             # 大小
                             # 如果有最小值和最大值
                             if key[2] and key[3]:
                                 if len(value) > key[3] or len(value) < key[2]:
                                     api_logger.debug("URL:" + request_url + "格式检查失败，原因：参数%s不在区间范围内" % key[0])
-                                    return error_msgs['msg_value_type_error']
+                                    return error_msgs[301]['msg_value_type_error']
                             # 如果只有最小值
                             elif key[2]:
                                 if len(value) < key[2]:
                                     api_logger.debug("URL:" + request_url + "格式检查失败，原因：参数%s小于最小值" % key[0])
-                                    return error_msgs['msg_value_type_error']
+                                    return error_msgs[301]['msg_value_type_error']
                             # 如果只有最大值
                             elif key[3]:
                                 if len(value) > key[3]:
                                     api_logger.debug("URL:" + request_url + "格式检查失败，原因：参数%s超出最大值" % key[0])
-                                    return error_msgs['msg_value_type_error']
+                                    return error_msgs[301]['msg_value_type_error']
             return func(*args, **kwargs)
         return wrapper
     return decorator
@@ -451,20 +463,20 @@ def check_post_parameter(*keys):
                 request_parameters = flask.request.json
             except Exception as e:
                 api_logger.error("URL:" + request_url + "格式检查失败，原因：" + repr(e))
-                return error_msgs['msg_request_body_not_json']
+                return error_msgs[301]['msg_request_body_not_json']
             else:
                 if not request_parameters:
-                    return error_msgs['msg_request_body_not_json']
+                    return error_msgs[301]['msg_request_body_not_json']
             # 检查必传项目
             for key in keys:
                 # 如果缺少必传项
                 if key[0] not in request_parameters:
-                    return error_msgs['msg_lack_keys']
+                    return error_msgs[302]['msg_request_params_incomplete']
                 else:
                     value = request_parameters[key[0]]
                     # 先检查类型
                     if type(value) is not key[1]:
-                        return error_msgs['msg_value_type_error']
+                        return error_msgs[301]['msg_value_type_error']
                     # 如果非布尔型，则检查长度
                     if key[1] is not bool:
                         # 如果有最小值但没最大值
@@ -472,31 +484,31 @@ def check_post_parameter(*keys):
                             if key[1] is str or key[1] is list:
                                 # 如果比最小值还小
                                 if len(value) < key[2]:
-                                    return error_msgs['msg_value_type_error']
+                                    return error_msgs[301]['msg_value_type_error']
                             elif key[1] is int:
                                 # 如果比最小值还小
                                 if value < key[2]:
-                                    return error_msgs['msg_value_type_error']
+                                    return error_msgs[301]['msg_value_type_error']
                         # 如果有最小以及最大值
                         elif key[2] and key[3]:
                             if key[1] is str or key[1] is list:
                                 # 如果比最小值还小或者比最大值还大
                                 if len(value) < key[2] or len(value) > key[3]:
-                                    return error_msgs['msg_value_type_error']
+                                    return error_msgs[301]['msg_value_type_error']
                             elif key[1] is int:
                                 # 如果比最小值还小或者比最大值还大
                                 if value < key[2] or value > key[3]:
-                                    return error_msgs['msg_value_type_error']
+                                    return error_msgs[301]['msg_value_type_error']
                         # 如果有没有最小值但有最大值
                         elif not key[2] and key[3]:
                             if key[1] is str or key[1] is list:
                                 # 如果比最大值还大
                                 if len(value) > key[3]:
-                                    return error_msgs['msg_value_type_error']
+                                    return error_msgs[301]['msg_value_type_error']
                             elif key[1] is int:
                                 # 如果比最大值还大
                                 if value > key[3]:
-                                    return error_msgs['msg_value_type_error']
+                                    return error_msgs[301]['msg_value_type_error']
             return func(*args, **kwargs)
         return wrapper
     return decorator
@@ -538,24 +550,24 @@ def check_form_parameter(*keys):
                     request_files = flask.request.files
                 except Exception as e:
                     api_logger.warn("文件清单检查失败，原因：" + repr(e))
-                    return json.dumps({"error_code": 301, "error_msg": "传参格式非法", "data": {}})
+                    return error_msgs[301]['msg_request_params_illegal']
                 else:
                     if not request_files:
-                        return json.dumps({"error_code": 301, "error_msg": "传参格式非法", "data": {}})
+                        return error_msgs[301]['msg_request_params_illegal']
                     else:
                         # 检查必传项目
                         check_files = keys[0]['files']
                         for check_file in check_files:
                             # 如果缺少必传项
                             if check_file[0] not in request_files:
-                                return json.dumps({"error_code": 302, "error_msg": "缺少必传参数", "data": {}})
+                                return error_msgs[302]['msg_request_params_incomplete']
                             else:
                                 request_file = request_files[check_file[0]]
                                 request_file.seek(0, os.SEEK_END)
                                 request_file_size = request_file.tell()
                                 # 检查大小
                                 if request_file_size < check_file[2] or request_file_size > check_file[3]:
-                                    return json.dumps({"error_code": 301, "error_msg": "文件大小超出规定", "data": {}})
+                                    return error_msgs[201]['msg_request_file_oversize']
                                 request_file.seek(0, 0)
                 # 检查forms
                 api_logger.debug("准备检查请求内的参数")
@@ -563,17 +575,17 @@ def check_form_parameter(*keys):
                     request_forms = flask.request.form
                 except Exception as e:
                     api_logger.warn("请求内的参数检查失败，原因：" + repr(e))
-                    return json.dumps({"error_code": 301, "error_msg": "传参格式非法", "data": {}})
+                    return error_msgs[301]['msg_request_params_illegal']
                 else:
                     if not request_forms:
-                        return json.dumps({"error_code": 301, "error_msg": "传参格式非法", "data": {}})
+                        return error_msgs[301]['msg_request_params_illegal']
                     else:
                         # 检查必传项目
                         check_forms = keys[0]['forms']
                         for check_form in check_forms:
                             # 如果缺少必传项
                             if check_form[0] not in request_forms:
-                                return json.dumps({"error_code": 302, "error_msg": "缺少必传参数", "data": {}})
+                                return error_msgs[302]['msg_request_params_incomplete']
                             else:
                                 request_form = request_forms[check_form[0]]
                                 # 先检查类型
@@ -582,7 +594,7 @@ def check_form_parameter(*keys):
                                     request_form_trans = check_form[1](request_form)
                                 except Exception as e:
                                     api_logger.warn("表单数据转换失败，原因：" + repr(e))
-                                    return json.dumps({"error_code": 301, "error_msg": "传参格式非法", "data": {}})
+                                    return error_msgs[301]['msg_request_params_illegal']
                                 else:
                                     check_flag = True
                                     # 如果bool
@@ -599,7 +611,7 @@ def check_form_parameter(*keys):
                                             check_flag = False
                                         # 判断失败
                                         if not check_flag:
-                                            return json.dumps({"error_code": 301, "error_msg": "传参格式非法", "data": {}})
+                                            return error_msgs[301]['msg_request_params_illegal']
                                     # 如果str
                                     if check_form[1] is str:
                                         # 如果有最小值限定
@@ -610,7 +622,7 @@ def check_form_parameter(*keys):
                                             check_flag = False
                                         # 判断失败
                                         if not check_flag:
-                                            return json.dumps({"error_code": 301, "error_msg": "传参格式非法", "data": {}})
+                                            return error_msgs[301]['msg_request_params_illegal']
             return func(*args, **kwargs)
         return wrapper
     return decorator
@@ -647,16 +659,16 @@ def check_delete_parameter(*keys):
                     request_forms = flask.request.form
                 except Exception as e:
                     api_logger.warn("请求内的参数检查失败，原因：" + repr(e))
-                    return json.dumps({"error_code": 301, "error_msg": "传参格式非法", "data": {}})
+                    return error_msgs[301]['msg_request_params_illegal']
                 else:
                     if not request_forms:
-                        return json.dumps({"error_code": 301, "error_msg": "传参格式非法", "data": {}})
+                        return error_msgs[301]['msg_request_params_illegal']
                     else:
                         # 检查必传项目
                         for check_form in keys:
                             # 如果缺少必传项
                             if check_form[0] not in request_forms:
-                                return json.dumps({"error_code": 302, "error_msg": "缺少必传参数", "data": {}})
+                                return error_msgs[302]['msg_request_params_incomplete']
                             else:
                                 request_form = request_forms[check_form[0]]
                                 # 先检查类型
@@ -665,7 +677,7 @@ def check_delete_parameter(*keys):
                                     request_form_trans = check_form[1](request_form)
                                 except Exception as e:
                                     api_logger.warn("表单数据转换失败，原因：" + repr(e))
-                                    return json.dumps({"error_code": 301, "error_msg": "传参格式非法", "data": {}})
+                                    return error_msgs[301]['msg_request_params_illegal']
                                 else:
                                     check_flag = True
                                     # 如果bool
@@ -682,7 +694,7 @@ def check_delete_parameter(*keys):
                                             check_flag = False
                                         # 判断失败
                                         if not check_flag:
-                                            return json.dumps({"error_code": 301, "error_msg": "传参格式非法", "data": {}})
+                                            return error_msgs[301]['msg_request_params_illegal']
                                     # 如果str
                                     if check_form[1] is str:
                                         # 如果有最小值限定
@@ -693,7 +705,7 @@ def check_delete_parameter(*keys):
                                             check_flag = False
                                         # 判断失败
                                         if not check_flag:
-                                            return json.dumps({"error_code": 301, "error_msg": "传参格式非法", "data": {}})
+                                            return error_msgs[301]['msg_request_params_illegal']
             else:
                 api_logger.debug("请求方法非DELETE，实际为%s" % flask.request.method)
             return func(*args, **kwargs)
