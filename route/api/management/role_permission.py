@@ -3,8 +3,8 @@
 
 from flask_restful import Resource
 
-from .role_permission_restful.get import role_permission_get
-from .role_permission_restful.put import role_permission_put
+from .restful_role_permission.get import role_permission_get
+from .restful_role_permission.put import role_permission_put
 
 
 class RolePermission(Resource):

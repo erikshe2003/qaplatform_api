@@ -4,7 +4,7 @@
 from flask_restful import Resource
 
 
-from .role_list_restful.get import role_list_get
+from .restful_role_list.get import role_list_get
 
 
 class RoleList(Resource):

@@ -4,9 +4,9 @@
 from flask_restful import Resource
 
 
-from .role_restful.get import role_get
-from .role_restful.post import role_post
-from .role_restful.delete import role_delete
+from .restful_role.get import role_get
+from .restful_role.post import role_post
+from .restful_role.delete import role_delete
 
 
 class Role(Resource):
