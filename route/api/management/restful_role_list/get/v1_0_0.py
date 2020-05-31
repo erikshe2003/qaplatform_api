@@ -5,7 +5,6 @@ import route
 
 from sqlalchemy import func
 
-from handler.api.error import ApiError
 from handler.log import api_logger
 from handler.pool import mysqlpool
 
@@ -18,7 +17,8 @@ from model.mysql import model_mysql_userinfo
 @route.check_auth
 @route.check_get_parameter(
     ['page_num', int, 1, None],
-    ['per_page', int, 1, None]
+    ['per_page', int, 1, None],
+    ['key_word', str, 0, 100]
 )
 def role_list_get():
     """
@@ -49,58 +49,36 @@ def role_list_get():
     # 取出传入参数值
     requestvalue_num = int(flask.request.args["page_num"])
     requestvalue_per = int(flask.request.args["per_page"])
-    requestvalue_key = None
-
-    # keywork非必填
-    if "key_word" not in flask.request.args:
-        pass
-    else:
-        if type(flask.request.args["key_word"]) is not str or len(flask.request.args["key_word"]) > 100:
-            return ApiError.requestfail_value("key_word")
-        requestvalue_key = flask.request.args["key_word"]
+    requestvalue_key = flask.request.args["key_word"]
 
     # 4.查询角色，包括id/name/addtime/updatetime/canmanage
     # 5.根据角色id，查询角色下关联的账户，判断角色是否可删除
     try:
-        if not requestvalue_key:
-            rinfo_mysql = mysqlpool.session.query(
-                model_mysql_roleinfo,
-                model_mysql_roleinfo.roleId,
-                model_mysql_roleinfo.roleName,
-                model_mysql_roleinfo.roleDescription,
-                model_mysql_roleinfo.roleIsAdmin,
-                model_mysql_roleinfo.roleAddTime,
-                model_mysql_roleinfo.roleUpdateTime,
-                func.count(model_mysql_userinfo.userId).label("userNum")
-            ).join(
-                model_mysql_userinfo,
-                model_mysql_roleinfo.roleId == model_mysql_userinfo.userRoleId,
-                isouter=True
-            ).group_by(
-                model_mysql_roleinfo.roleId
-            ).limit(
+        rinfo_mysql_query = mysqlpool.session.query(
+            model_mysql_roleinfo,
+            model_mysql_roleinfo.roleId,
+            model_mysql_roleinfo.roleName,
+            model_mysql_roleinfo.roleDescription,
+            model_mysql_roleinfo.roleIsAdmin,
+            model_mysql_roleinfo.roleAddTime,
+            model_mysql_roleinfo.roleUpdateTime,
+            func.count(model_mysql_userinfo.userId).label("userNum")
+        ).join(
+            model_mysql_userinfo,
+            model_mysql_roleinfo.roleId == model_mysql_userinfo.userRoleId,
+            isouter=True
+        ).group_by(
+            model_mysql_roleinfo.roleId
+        )
+        if requestvalue_key == '':
+            rinfo_mysql = rinfo_mysql_query.limit(
                 # (requestvalue_num - 1) * requestvalue_per,
                 requestvalue_per
             ).offset(
                 (requestvalue_num - 1) * requestvalue_per
             ).all()
         else:
-            rinfo_mysql = mysqlpool.session.query(
-                model_mysql_roleinfo,
-                model_mysql_roleinfo.roleId,
-                model_mysql_roleinfo.roleName,
-                model_mysql_roleinfo.roleDescription,
-                model_mysql_roleinfo.roleIsAdmin,
-                model_mysql_roleinfo.roleAddTime,
-                model_mysql_roleinfo.roleUpdateTime,
-                func.count(model_mysql_userinfo.userId).label("userNum")
-            ).join(
-                model_mysql_userinfo,
-                model_mysql_roleinfo.roleId == model_mysql_userinfo.userRoleId,
-                isouter=True
-            ).group_by(
-                model_mysql_roleinfo.roleId
-            ).filter(
+            rinfo_mysql = rinfo_mysql_query.filter(
                 model_mysql_roleinfo.roleName.like('%' + requestvalue_key + '%')
             ).limit(
                 # (requestvalue_num - 1) * requestvalue_per,
@@ -126,9 +104,15 @@ def role_list_get():
             response_json["data"]["role_list"][r.roleId] = rsome
 
     try:
-        total_mysql = mysqlpool.session.query(
+        total_mysql_query = mysqlpool.session.query(
             func.count(model_mysql_roleinfo.roleId).label(name="roleNum")
-        ).first()
+        )
+        if requestvalue_key == '':
+            total_mysql = total_mysql_query.first()
+        else:
+            total_mysql = total_mysql_query.filter(
+                model_mysql_roleinfo.roleName.like('%' + requestvalue_key + '%')
+            ).first()
         logmsg = "数据库中角色总数读取成功"
         api_logger.debug(logmsg)
     except Exception as e:
