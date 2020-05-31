@@ -10,8 +10,6 @@ from sqlalchemy import and_
 from handler.log import api_logger
 from handler.pool import mysqlpool
 
-from route.api.plan import api_plan
-
 from model.mysql import model_mysql_planinfo
 from model.mysql import model_mysql_tablesnap
 from model.mysql import model_mysql_userinfo
@@ -30,7 +28,6 @@ from model.redis import model_redis_userinfo
 """
 
 
-@api_plan.route('/savePersonalPlanTable.json', methods=["post"])
 @route.check_user
 @route.check_token
 @route.check_auth
@@ -38,7 +35,7 @@ from model.redis import model_redis_userinfo
     ['plan', dict, 0, None],
     ['table', dict, 0, None]
 )
-def save_personal_plan_table():
+def plan_worktable_snap_post():
     # 初始化返回内容
     response_json = {
         "error_code": 200,
@@ -53,9 +50,9 @@ def save_personal_plan_table():
 
     # 检查必输项以及格式
     if 'id' not in request_json_plan or type(request_json_plan['id']) is not int or request_json_plan['id'] < 1:
-        return route.error_msgs['msg_data_error']
+        return route.error_msgs[201]['msg_data_error']
     if 'content' not in request_json_table or type(request_json_table['content']) is not str:
-        return route.error_msgs['msg_data_error']
+        return route.error_msgs[201]['msg_data_error']
 
     # 检查table_content是否符合格式要求
     table_content = request_json_table['content']
@@ -64,7 +61,7 @@ def save_personal_plan_table():
         table_content_json = json.loads(table_content)
     except Exception as e:
         api_logger.debug("table_content处理json格式化失败，失败原因：" + repr(e))
-        return route.error_msgs['msg_data_error']
+        return route.error_msgs[201]['msg_data_error']
     else:
         # 递归其内容，检查必传项是否存在
         def recurse_for_key_check(obj):
@@ -72,22 +69,22 @@ def save_personal_plan_table():
                 # 检查必传项：
                 # 1.id
                 if 'id' not in o:
-                    return route.error_msgs['msg_data_error']
+                    return route.error_msgs[201]['msg_data_error']
                 # 2.originalId
                 if 'originalId' not in o:
-                    return route.error_msgs['msg_data_error']
+                    return route.error_msgs[201]['msg_data_error']
                 # 3.title
                 if 'title' not in o:
-                    return route.error_msgs['msg_data_error']
+                    return route.error_msgs[201]['msg_data_error']
                 # 4.desc
                 if 'desc' not in o:
-                    return route.error_msgs['msg_data_error']
+                    return route.error_msgs[201]['msg_data_error']
                 # 5.status
                 if 'status' not in o:
-                    return route.error_msgs['msg_data_error']
+                    return route.error_msgs[201]['msg_data_error']
                 # 6.children
                 if 'children' not in o:
-                    return route.error_msgs['msg_data_error']
+                    return route.error_msgs[201]['msg_data_error']
                 recurse_for_key_check(o['children'])
         recurse_for_key_check(table_content_json)
 
@@ -99,7 +96,7 @@ def save_personal_plan_table():
         ).first()
     except Exception as e:
         api_logger.error("PlanId=" + str(plan_id) + "的model_mysql_planinfo数据读取失败，失败原因：" + repr(e))
-        return route.error_msgs['msg_db_error']
+        return route.error_msgs[500]['msg_db_error']
     else:
         plan_user_id = mysql_plan_info.ownerId
 
@@ -114,10 +111,10 @@ def save_personal_plan_table():
             api_logger.debug("Mail=" + request_head_mail + "的model_mysql_userinfo数据读取成功")
         except Exception as e:
             api_logger.error("Mail=" + request_head_mail + "的model_mysql_userinfo数据读取失败，失败原因：" + repr(e))
-            return route.error_msgs['msg_db_error']
+            return route.error_msgs[500]['msg_db_error']
         else:
             if mysql_userinfo is None:
-                return route.error_msgs['msg_no_user']
+                return route.error_msgs[201]['msg_no_user']
             else:
                 request_user_id = mysql_userinfo.userId
     else:
@@ -127,13 +124,13 @@ def save_personal_plan_table():
             api_logger.debug("Mail=" + request_head_mail + "的缓存账户数据json格式化成功")
         except Exception as e:
             api_logger.error("Mail=" + request_head_mail + "的缓存账户数据json格式化失败，失败原因：" + repr(e))
-            return route.error_msgs['msg_json_format_fail']
+            return route.error_msgs[500]['msg_json_format_fail']
         else:
             request_user_id = redis_userinfo_json['userId']
 
     # 如果操作者和计划拥有者不是同一人，则报错
     if plan_user_id != request_user_id:
-        return route.error_msgs['msg_plan_notopen']
+        return route.error_msgs[201]['msg_plan_notopen']
 
     # 将status为1的snap全部置为失效
     try:
@@ -145,7 +142,7 @@ def save_personal_plan_table():
         ).all()
     except Exception as e:
         api_logger.error("model_mysql_tablesnap数据读取失败，失败原因：" + repr(e))
-        return route.error_msgs['msg_db_error']
+        return route.error_msgs[500]['msg_db_error']
     else:
         for s in mysql_snaps:
             s.status = 0
@@ -153,7 +150,7 @@ def save_personal_plan_table():
             mysqlpool.session.commit()
         except Exception as e:
             api_logger.error("mysql_snaps数据写入失败，失败原因：" + repr(e))
-            return route.error_msgs['msg_db_error']
+            return route.error_msgs[500]['msg_db_error']
 
     # 新增status为1的snap，内容即为接口传参内容
     new_snap = model_mysql_tablesnap(
@@ -167,7 +164,7 @@ def save_personal_plan_table():
         mysqlpool.session.commit()
     except Exception as e:
         api_logger.error("new_snap数据写入失败，失败原因：" + repr(e))
-        return route.error_msgs['msg_db_error']
+        return route.error_msgs[500]['msg_db_error']
 
     # 最后返回内容
-    return json.dumps(response_json)
+    return response_json
