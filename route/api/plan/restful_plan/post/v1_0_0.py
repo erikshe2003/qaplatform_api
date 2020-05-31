@@ -1,20 +1,14 @@
 # -*- coding: utf-8 -*-
 
 import flask
-import json
 import route
-
-from sqlalchemy import func, and_
 
 from handler.log import api_logger
 from handler.pool import mysqlpool
 
-from route.api.plan import api_plan
-
 from model.mysql import model_mysql_planinfo
 from model.mysql import model_mysql_plantype
 from model.mysql import model_mysql_userinfo
-from model.redis import model_redis_userinfo
 
 """
     新增个人测试计划-api路由
@@ -29,17 +23,17 @@ from model.redis import model_redis_userinfo
 """
 
 
-@api_plan.route('/addPersonalPlan.json', methods=["post"])
 @route.check_user
 @route.check_token
 @route.check_auth
 @route.check_post_parameter(
+    ['userId', int, 1, None],
     ['planType', int, 1, 2],
     ['planTitle', str, 1, 50],
     ['planDescription', str, 0, 200],
     ['openLevel', int, 1, 3]
 )
-def add_personal_plan():
+def plan_post():
     # 初始化返回内容
     response_json = {
         "error_code": 200,
@@ -47,41 +41,25 @@ def add_personal_plan():
         "data": {}
     }
 
-    user_id = None
     # 取出必传入参
-    mail_address = flask.request.headers['Mail']
+    user_id = flask.request.json['userId']
     plan_type = flask.request.json['planType']
     plan_title = flask.request.json['planTitle']
     open_level = flask.request.json['openLevel']
     plan_description = flask.request.json['planDescription']
 
-    # 查询缓存中账户信息，并取出账户id
-    redis_userinfo = model_redis_userinfo.query(user_email=mail_address)
-    # 如果缓存中没查到，则查询mysql
-    if redis_userinfo is None:
-        try:
-            mysql_userinfo = model_mysql_userinfo.query.filter(
-                model_mysql_userinfo.userEmail == mail_address
-            ).first()
-            api_logger.debug(mail_address + "的账户基础信息读取成功")
-        except Exception as e:
-            api_logger.error(mail_address + "的账户基础信息读取失败，失败原因：" + repr(e))
-            return route.error_msgs['msg_db_error']
-        else:
-            if mysql_userinfo is None:
-                return route.error_msgs['msg_no_user']
-            else:
-                user_id = mysql_userinfo.userId
+    # 判断user_id是否存在
+    try:
+        mysql_userinfo = model_mysql_userinfo.query.filter(
+            model_mysql_userinfo.userId == user_id
+        ).first()
+        api_logger.debug("账户基础信息读取成功")
+    except Exception as e:
+        api_logger.error("账户基础信息读取失败，失败原因：" + repr(e))
+        return route.error_msgs[500]['msg_db_error']
     else:
-        # 格式化缓存基础信息内容
-        try:
-            redis_userinfo_json = json.loads(redis_userinfo.decode("utf8"))
-            api_logger.debug(mail_address + "的缓存账户数据json格式化成功")
-        except Exception as e:
-            api_logger.error(mail_address + "的缓存账户数据json格式化失败，失败原因：" + repr(e))
-            return route.error_msgs['msg_json_format_fail']
-        else:
-            user_id = redis_userinfo_json['userId']
+        if mysql_userinfo is None:
+            return route.error_msgs[201]['msg_no_user']
 
     # 查询测试计划类型是否存在
     try:
@@ -89,11 +67,11 @@ def add_personal_plan():
             model_mysql_plantype.typeId == plan_type
         ).first()
     except Exception as e:
-        api_logger.error(mail_address + "的测试计划类型读取失败，失败原因：" + repr(e))
-        return route.error_msgs['msg_db_error']
+        api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
+        return route.error_msgs[500]['msg_db_error']
     else:
         if mysql_plantype is None:
-            return route.error_msgs['msg_no_plan_type']
+            return route.error_msgs[201]['msg_no_plan_type']
 
     """
         插入测试计划数据
@@ -113,4 +91,4 @@ def add_personal_plan():
     mysqlpool.session.commit()
 
     # 最后返回内容
-    return json.dumps(response_json)
+    return response_json
