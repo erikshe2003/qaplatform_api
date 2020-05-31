@@ -34,7 +34,8 @@ from model.redis import model_redis_userinfo
     ['userId', int, 1, None],
     ['sortType', int, 1, None],
     ['numPerPage', int, 1, None],
-    ['pageNumber', int, 1, None]
+    ['pageNumber', int, 1, None],
+    ['keyword', str, 0, 100]
 )
 def plan_list_get():
     # 初始化返回内容
@@ -55,6 +56,7 @@ def plan_list_get():
     sort_type = int(flask.request.args['sortType'])
     number_per_page = int(flask.request.args['numPerPage'])
     page_number = int(flask.request.args['pageNumber'])
+    key_word = flask.request.args['keyword']
 
     # 查询缓存中账户信息，并取出账户id
     redis_userinfo = model_redis_userinfo.query(user_email=operator_mail_address)
@@ -95,12 +97,20 @@ def plan_list_get():
     # 查询mysql中测试计划数据
     # 查询测试计划总数
     try:
-        mysql_planlist_number = mysqlpool.session.query(
+        mysql_planlist_number_query = mysqlpool.session.query(
             func.count(model_mysql_planinfo.planId),
-        ).filter(
-            model_mysql_planinfo.ownerId == user_id,
-            model_mysql_planinfo.planOpenLevel < open_level
-        ).first()
+        )
+        if key_word == '':
+            mysql_planlist_number = mysql_planlist_number_query.filter(
+                model_mysql_planinfo.ownerId == user_id,
+                model_mysql_planinfo.planOpenLevel < open_level
+            ).first()
+        else:
+            mysql_planlist_number = mysql_planlist_number_query.filter(
+                model_mysql_planinfo.ownerId == user_id,
+                model_mysql_planinfo.planOpenLevel < open_level,
+                model_mysql_planinfo.planTitle.like('%' + key_word + '%')
+            ).first()
     except Exception as e:
         api_logger.error("测试计划数量读取失败，失败原因：" + repr(e))
         return route.error_msgs[500]['msg_db_error']
@@ -118,7 +128,7 @@ def plan_list_get():
             sort_type_condition = model_mysql_tablesnap.snapAddTime.desc()
         else:
             sort_type_condition = model_mysql_tablesnap.snapAddTime.asc()
-        mysql_plan_list = mysqlpool.session.query(
+        mysql_plan_list_query = mysqlpool.session.query(
             model_mysql_planinfo.planId.label('planId'),
             model_mysql_planinfo.planTitle.label('planTitle'),
             model_mysql_planinfo.planDescription.label('planDescription'),
@@ -139,17 +149,32 @@ def plan_list_get():
                 model_mysql_planinfo.planId == model_mysql_tablesnap.planId,
                 model_mysql_tablesnap.status == 1
             )
-        ).filter(
-            model_mysql_userinfo.userId == user_id,
-            model_mysql_planinfo.status == 1,
-            model_mysql_planinfo.planOpenLevel < open_level
-        ).order_by(
-            sort_type_condition
-        ).limit(
-            number_per_page
-        ).offset(
-            (page_number - 1) * number_per_page
-        ).all()
+        )
+        if key_word == '':
+            mysql_plan_list = mysql_plan_list_query.filter(
+                model_mysql_userinfo.userId == user_id,
+                model_mysql_planinfo.status == 1,
+                model_mysql_planinfo.planOpenLevel < open_level
+            ).order_by(
+                sort_type_condition
+            ).limit(
+                number_per_page
+            ).offset(
+                (page_number - 1) * number_per_page
+            ).all()
+        else:
+            mysql_plan_list = mysql_plan_list_query.filter(
+                model_mysql_userinfo.userId == user_id,
+                model_mysql_planinfo.status == 1,
+                model_mysql_planinfo.planOpenLevel < open_level,
+                model_mysql_planinfo.planTitle.like('%' + key_word + '%')
+            ).order_by(
+                sort_type_condition
+            ).limit(
+                number_per_page
+            ).offset(
+                (page_number - 1) * number_per_page
+            ).all()
     except Exception as e:
         api_logger.error("测试计划数据读取失败，失败原因：" + repr(e))
         return route.error_msgs[500]['msg_db_error']
