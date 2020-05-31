@@ -28,7 +28,7 @@ from model.redis import model_redis_userinfo
 @route.check_token
 @route.check_user
 @route.check_auth
-@route.check_get_parameter(
+@route.check_delete_parameter(
     ['user_id', int, 1, None],
     ['status', int, 0, None]
 )

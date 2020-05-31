@@ -25,7 +25,7 @@ from model.redis import model_redis_apiauth
 @route.check_user
 @route.check_token
 @route.check_auth
-@route.check_get_parameter(
+@route.check_delete_parameter(
     ['role_id', int, 1, None]
 )
 def role_delete():
