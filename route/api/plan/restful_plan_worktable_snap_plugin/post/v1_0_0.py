@@ -4,14 +4,10 @@ import os
 import shutil
 import flask
 import json
-import mimetypes
-import uuid
 import route
 
 from handler.log import api_logger
 from handler.config import appconfig
-
-from route.api.plan import api_plan
 
 from model.mysql import model_mysql_planinfo
 from model.mysql import model_mysql_userinfo
@@ -29,7 +25,6 @@ from model.redis import model_redis_userinfo
 """
 
 
-@api_plan.route('/copyPlugin', methods=["post"])
 @route.check_user
 @route.check_token
 @route.check_auth
@@ -38,7 +33,7 @@ from model.redis import model_redis_userinfo
     ["a_id", int, 0, None],
     ["b_id", int, 0, None]
 )
-def copy_plugin():
+def plan_worktable_snap_plugin_post():
     # 初始化返回内容
     response_json = {
         "error_code": 200,
@@ -46,45 +41,43 @@ def copy_plugin():
         "data": {}
     }
 
-    # POST - 上传文件
-    # DELETE - 删除插件拥有的文件
     # 如果传了文件uuid名称，则删除对应的；如果没传，则删除所有
-    if flask.request.method == "POST":
-        result, msg = check_plan_owner(flask.request.headers['Mail'], flask.request.json['plan_id'])
-        if result is None or result is False:
-            return msg
+    result, msg = check_plan_owner(flask.request.headers['Mail'], flask.request.json['plan_id'])
+    if result is None or result is False:
+        return msg
 
-        # 尝试将a文件夹拷贝成b文件夹
-        # 按照：指定路径/plan_id/id下
-        resource_path = appconfig.get("task", "filePutDir")
-        resource_path = resource_path[:-1] if resource_path[-1] == "/" else resource_path
-        resource_path_a = "%s/%s/%s" % (
-            resource_path,
-            flask.request.json['plan_id'],
-            flask.request.json['a_id']
-        )
-        resource_path_b = "%s/%s/%s" % (
-            resource_path,
-            flask.request.json['plan_id'],
-            flask.request.json['b_id']
-        )
-        # 如果b文件夹存在，则删除
-        if os.path.exists(resource_path_b) and os.path.isdir(resource_path_b):
-            # 删除文件夹
-            try:
-                shutil.rmtree(resource_path_b)
-            except Exception as e:
-                api_logger.error("文件夹删除失败，失败原因：" + repr(e))
-                return route.error_msgs['msg_file_error']
-        if os.path.exists(resource_path_a) and os.path.isdir(resource_path_a):
-            # 新建文件夹
-            try:
-                shutil.copytree(resource_path_a, resource_path_b)
-            except Exception as e:
-                api_logger.error("文件夹复制失败，失败原因：" + repr(e))
-                return route.error_msgs['msg_file_error']
+    # 尝试将a文件夹拷贝成b文件夹
+    # 按照：指定路径/plan_id/id下
+    resource_path = appconfig.get("task", "filePutDir")
+    resource_path = resource_path[:-1] if resource_path[-1] == "/" else resource_path
+    resource_path_a = "%s/%s/%s" % (
+        resource_path,
+        flask.request.json['plan_id'],
+        flask.request.json['a_id']
+    )
+    resource_path_b = "%s/%s/%s" % (
+        resource_path,
+        flask.request.json['plan_id'],
+        flask.request.json['b_id']
+    )
+    # 如果b文件夹存在，则删除
+    if os.path.exists(resource_path_b) and os.path.isdir(resource_path_b):
+        # 删除文件夹
+        try:
+            shutil.rmtree(resource_path_b)
+        except Exception as e:
+            api_logger.error("文件夹删除失败，失败原因：" + repr(e))
+            return route.error_msgs[500]['msg_file_error']
+    if os.path.exists(resource_path_a) and os.path.isdir(resource_path_a):
+        # 新建文件夹
+        try:
+            shutil.copytree(resource_path_a, resource_path_b)
+        except Exception as e:
+            api_logger.error("文件夹复制失败，失败原因：" + repr(e))
+            return route.error_msgs[500]['msg_file_error']
+
     # 最后返回内容
-    return json.dumps(response_json)
+    return response_json
 
 
 def check_plan_owner(mail, plan_id):
@@ -100,10 +93,10 @@ def check_plan_owner(mail, plan_id):
         ).first()
     except Exception as e:
         api_logger.error("model_mysql_planinfo数据读取失败，失败原因：" + repr(e))
-        return None, route.error_msgs['msg_db_error']
+        return None, route.error_msgs[500]['msg_db_error']
     else:
         if mysql_plan_info is None:
-            return False, route.error_msgs['msg_no_plan']
+            return False, route.error_msgs[201]['msg_no_plan']
         else:
             plan_user_id = mysql_plan_info.ownerId
 
@@ -118,10 +111,10 @@ def check_plan_owner(mail, plan_id):
             api_logger.debug("model_mysql_userinfo数据读取成功")
         except Exception as e:
             api_logger.error("model_mysql_userinfo数据读取失败，失败原因：" + repr(e))
-            return None, route.error_msgs['msg_db_error']
+            return None, route.error_msgs[500]['msg_db_error']
         else:
             if mysql_userinfo is None:
-                return False, route.error_msgs['msg_no_user']
+                return False, route.error_msgs[201]['msg_no_user']
             else:
                 request_user_id = mysql_userinfo.userId
     else:
@@ -131,12 +124,12 @@ def check_plan_owner(mail, plan_id):
             api_logger.debug("缓存账户数据json格式化成功")
         except Exception as e:
             api_logger.error("缓存账户数据json格式化失败，失败原因：" + repr(e))
-            return None, route.error_msgs['msg_json_format_fail']
+            return None, route.error_msgs[500]['msg_json_format_fail']
         else:
             request_user_id = redis_userinfo_json['userId']
 
     # 如果操作者和计划拥有者不是同一人，则报错
     if plan_user_id != request_user_id:
-        return False, route.error_msgs['msg_plan_notopen']
+        return False, route.error_msgs[201]['msg_plan_notopen']
     else:
         return True, None
