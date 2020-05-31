@@ -8,8 +8,6 @@ from sqlalchemy import and_
 
 from handler.log import api_logger
 
-from route.api.plan import api_plan
-
 from model.mysql import model_mysql_planinfo
 from model.mysql import model_mysql_tablesnap
 from model.mysql import model_mysql_userinfo
@@ -28,14 +26,13 @@ from model.redis import model_redis_userinfo
 """
 
 
-@api_plan.route('/getNewestPersonalPlanTableSnap.json', methods=["GET"])
 @route.check_user
 @route.check_token
 @route.check_auth
 @route.check_get_parameter(
     ['planId', int, 0, None]
 )
-def get_newest_personal_plan_table_snap():
+def plan_worktable_snap_get():
     # 初始化返回内容
     response_json = {
         "error_code": 200,
@@ -59,7 +56,7 @@ def get_newest_personal_plan_table_snap():
     case_list = []
     # 取出入参
     request_head_mail = flask.request.headers['Mail']
-    plan_id = flask.request.args['planId']
+    plan_id = int(flask.request.args['planId'])
 
     # 查询测试计划基础信息，并取出所属者账户id
     try:
@@ -68,10 +65,10 @@ def get_newest_personal_plan_table_snap():
         ).first()
     except Exception as e:
         api_logger.error("PlanId=" + str(plan_id) + "的model_mysql_planinfo数据读取失败，失败原因：" + repr(e))
-        return route.error_msgs['msg_db_error']
+        return route.error_msgs[500]['msg_db_error']
     else:
         if mysql_plan_info is None:
-            return route.error_msgs['msg_no_plan']
+            return route.error_msgs[201]['msg_no_plan']
         else:
             plan_user_id = mysql_plan_info.ownerId
             response_json['data']['plan']['id'] = mysql_plan_info.planId
@@ -90,10 +87,10 @@ def get_newest_personal_plan_table_snap():
             api_logger.debug("Mail=" + request_head_mail + "的model_mysql_userinfo数据读取成功")
         except Exception as e:
             api_logger.error("Mail=" + request_head_mail + "的model_mysql_userinfo数据读取失败，失败原因：" + repr(e))
-            return route.error_msgs['msg_db_error']
+            return route.error_msgs[500]['msg_db_error']
         else:
             if mysql_userinfo is None:
-                return route.error_msgs['msg_no_user']
+                return route.error_msgs[201]['msg_no_user']
             else:
                 request_user_id = mysql_userinfo.userId
     else:
@@ -103,13 +100,13 @@ def get_newest_personal_plan_table_snap():
             api_logger.debug("Mail=" + request_head_mail + "的缓存账户数据json格式化成功")
         except Exception as e:
             api_logger.error("Mail=" + request_head_mail + "的缓存账户数据json格式化失败，失败原因：" + repr(e))
-            return route.error_msgs['msg_json_format_fail']
+            return route.error_msgs[500]['msg_json_format_fail']
         else:
             request_user_id = redis_userinfo_json['userId']
 
     # 如果操作者和计划拥有者不是同一人，则报错
     if plan_user_id != request_user_id:
-        return route.error_msgs['msg_plan_notopen']
+        return route.error_msgs[201]['msg_plan_notopen']
 
     # 查询快照
     try:
@@ -122,7 +119,7 @@ def get_newest_personal_plan_table_snap():
         api_logger.debug("Plan=" + str(plan_id) + "的mysql_temp_version数据读取成功")
     except Exception as e:
         api_logger.error("Plan=" + str(plan_id) + "的mysql_temp_version数据读取失败，失败原因：" + repr(e))
-        return route.error_msgs['msg_db_error']
+        return route.error_msgs[500]['msg_db_error']
     else:
         # 如果无临时版本，则返回空数据
         if mysql_snap_data is None:
@@ -133,4 +130,4 @@ def get_newest_personal_plan_table_snap():
             response_json['data']['snap']['addTime'] = str(mysql_snap_data.snapAddTime)
 
     # 最后返回内容
-    return json.dumps(response_json)
+    return response_json
