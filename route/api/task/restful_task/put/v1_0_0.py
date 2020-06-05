@@ -10,8 +10,6 @@ from handler.log import api_logger
 from handler.pool import mysqlpool
 from handler.socket.task import kill_task
 
-from route.api.task import api_task
-
 from model.mysql import model_mysql_userinfo
 from model.mysql import model_mysql_taskinfo
 from model.mysql import model_mysql_taskassign
@@ -33,14 +31,13 @@ from model.redis import model_redis_userinfo
 """
 
 
-@api_task.route('/stopTestTask.json', methods=['post'])
 @route.check_token
 @route.check_user
 @route.check_auth
 @route.check_post_parameter(
     ['taskId', int, 1, None]
 )
-def stop_test_task():
+def task_put():
     # 初始化返回内容
     response_json = {
         "error_code": 200,
@@ -63,10 +60,10 @@ def stop_test_task():
             api_logger.debug(mail_address + "的账户基础信息读取成功")
         except Exception as e:
             api_logger.error(mail_address + "的账户基础信息读取失败，失败原因：" + repr(e))
-            return route.error_msgs['msg_db_error']
+            return route.error_msgs[500]['msg_db_error']
         else:
             if mysql_user_info is None:
-                return route.error_msgs['msg_no_user']
+                return route.error_msgs[201]['msg_no_user']
             else:
                 user_id = mysql_user_info.userId
     else:
@@ -76,7 +73,7 @@ def stop_test_task():
             api_logger.debug(mail_address + "的缓存账户数据json格式化成功")
         except Exception as e:
             api_logger.error(mail_address + "的缓存账户数据json格式化失败，失败原因：" + repr(e))
-            return route.error_msgs['msg_json_format_fail']
+            return route.error_msgs[500]['msg_json_format_fail']
         else:
             user_id = redis_user_info_json['userId']
 
@@ -90,10 +87,10 @@ def stop_test_task():
         ).first()
     except Exception as e:
         api_logger.debug("测试任务数据读取失败，失败原因：" + repr(e))
-        return route.error_msgs['msg_db_error']
+        return route.error_msgs[500]['msg_db_error']
     else:
         if not the_task_info:
-            return route.error_msgs['msg_no_test_task']
+            return route.error_msgs[201]['msg_no_test_task']
         else:
             # 根据taskId来查询测试任务下发记录
             try:
@@ -113,9 +110,9 @@ def stop_test_task():
                 ).all()
             except Exception as e:
                 api_logger.debug(mail_address + "的临时测试计划版本读取失败，失败原因：" + repr(e))
-                return route.error_msgs['msg_db_error']
+                return route.error_msgs[500]['msg_db_error']
             else:
                 # 下发终止测试任务的socket请求
                 kill_task(task_assign_data)
 
-    return json.dumps(response_json)
+    return response_json
