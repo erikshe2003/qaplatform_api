@@ -10,8 +10,6 @@ from handler.log import api_logger
 from handler.pool import mysqlpool
 from handler.config import databaseconfig
 
-from route.api.task import api_task
-
 from model.mysql import model_mysql_workerinfo
 
 """
@@ -23,13 +21,12 @@ from model.mysql import model_mysql_workerinfo
 """
 
 
-@api_task.route('/workerRegister.json', methods=['post'])
 @route.check_post_parameter(
     ['uuid', str, 1, 100],
     ['ip', str, 1, 100],
     ['port', int, 1025, 65534]
 )
-def worker_register():
+def worker_post():
     # 初始化返回内容
     response_json = {
         "error_code": 200,
@@ -58,7 +55,7 @@ def worker_register():
         api_logger.debug(worker_uuid + "的workerInfo信息读取成功")
     except Exception as e:
         api_logger.error(worker_uuid + "的workerInfo信息读取失败，失败原因：" + repr(e))
-        return route.error_msgs['msg_db_error']
+        return route.error_msgs[500]['msg_db_error']
     else:
         # 如果未查询到记录，则新增记录
         if mysql_worker is None:
@@ -82,11 +79,12 @@ def worker_register():
             api_logger.debug(worker_uuid + "的workerInfo信息新增/更新成功")
         except Exception as e:
             api_logger.debug(worker_uuid + "的workerInfo信息新增/更新失败，失败原因:" + repr(e))
-            return route.error_msgs['msg_db_error']
+            return route.error_msgs[500]['msg_db_error']
         else:
             # 没问题的话返回redis相关信息给worker
             response_json['data']['worker_id'] = mysql_worker.workerId
-            response_json['data']['log_ip'] = databaseconfig.get('redis', 'host')
-            response_json['data']['log_port'] = databaseconfig.get('redis', 'port')
-            response_json['data']['log_password'] = databaseconfig.get('redis', 'password')
+            response_json['data']['log_ip'] = databaseconfig.get('mongodb', 'host')
+            response_json['data']['log_port'] = databaseconfig.get('mongodb', 'port')
+            response_json['data']['log_name'] = databaseconfig.get('mongodb', 'username')
+            response_json['data']['log_password'] = databaseconfig.get('mongodb', 'password')
             return json.dumps(response_json)
