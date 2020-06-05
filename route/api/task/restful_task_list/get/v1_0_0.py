@@ -20,12 +20,9 @@ from sqlalchemy import and_
 
 from handler.log import api_logger
 
-from route.api.task import api_task
-
 from model.mysql import model_mysql_taskinfo
 
 
-@api_task.route('/personalApiTestPlanTaskList.json', methods=['get'])
 @route.check_token
 @route.check_user
 @route.check_auth
@@ -34,7 +31,7 @@ from model.mysql import model_mysql_taskinfo
     ['planId', int, 1, None],
     ['num', int, 1, None]
 )
-def personal_api_test_plan_task_list():
+def task_list_get():
     # 初始化返回内容
     response_json = {
         "error_code": 200,
@@ -65,7 +62,7 @@ def personal_api_test_plan_task_list():
         ).all()
     except Exception as e:
         api_logger.error("获取固定时间段内开始执行的历史任务数据失败，表：model_mysql_taskassign，失败原因：" + repr(e))
-        return route.error_msgs['msg_db_error']
+        return route.error_msgs[500]['msg_db_error']
 
     # 格式化返回值
     response_json['data']['total'] = len(tasks)
@@ -76,4 +73,4 @@ def personal_api_test_plan_task_list():
             'startTime': str(task.startTime)
         })
 
-    return json.dumps(response_json)
+    return response_json
