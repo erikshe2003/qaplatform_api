@@ -1,21 +1,14 @@
 # -*- coding: utf-8 -*-
 
 import flask
-import json
 import route
-import time
-
-from sqlalchemy import and_, func, or_
 
 from handler.log import api_logger
 from handler.pool import mysqlpool
 
-from route.api.task import api_task
-
 from model.mysql import model_mysql_taskassign
 from model.mysql import model_mysql_taskinfo
 from model.mysql import model_mysql_workerinfo
-from model.mysql import model_mysql_planinfo
 
 """
     获取个人测试计划下接口测试任务的基础信息-api路由
@@ -29,14 +22,13 @@ from model.mysql import model_mysql_planinfo
 """
 
 
-@api_task.route('/apiTestTaskConfigurationInfo.json', methods=['get'])
 @route.check_token
 @route.check_user
 @route.check_auth
 @route.check_get_parameter(
     ['taskId', int, 1, None]
 )
-def api_test_task_configuration_info():
+def task_get():
     # 初始化返回内容
     response_json = {
         "error_code": 200,
@@ -56,7 +48,7 @@ def api_test_task_configuration_info():
         ).first()
     except Exception as e:
         api_logger.error("查询测试计划配置信息失败，失败原因：" + repr(e))
-        return route.error_msgs['msg_db_error']
+        return route.error_msgs[500]['msg_db_error']
     else:
         try:
             task_assign_info = mysqlpool.session.query(
@@ -76,7 +68,7 @@ def api_test_task_configuration_info():
             ).all()
         except Exception as e:
             api_logger.error("查询测试计划配置信息失败，失败原因：" + repr(e))
-            return route.error_msgs['msg_db_error']
+            return route.error_msgs[500]['msg_db_error']
 
     # 格式化返回值
     response_json['data']['configuration']['taskId'] = taskid
@@ -103,4 +95,4 @@ def api_test_task_configuration_info():
             'status': tai.status
         })
 
-    return json.dumps(response_json)
+    return response_json
