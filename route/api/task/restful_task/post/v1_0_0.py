@@ -9,14 +9,12 @@ import time
 import os
 import zipfile
 
-from sqlalchemy import and_, distinct, func
+from sqlalchemy import and_
 
 from handler.log import api_logger
 from handler.config import appconfig
 from handler.pool import mysqlpool
-from handler.socket.deploy import single_deploy, multi_deploy
-
-from route.api.task import api_task
+from handler.socket.deploy import single_deploy
 
 from model.mysql import model_mysql_planinfo
 from model.mysql import model_mysql_tablesnap
@@ -40,7 +38,6 @@ from model.redis import modle_redis_apitestplanworktable
 """
 
 
-@api_task.route('/newTestTask.json', methods=['post'])
 @route.check_token
 @route.check_user
 @route.check_auth
@@ -50,7 +47,7 @@ from model.redis import modle_redis_apitestplanworktable
     ['startType', int, 1, 2],
     ['runType', int, 1, 2]
 )
-def new_test_task():
+def task_post():
     # 初始化返回内容
     response_json = {
         "error_code": 200,
@@ -74,37 +71,37 @@ def new_test_task():
         # 开始时间检查
         if 'startTime' not in flask.request.json:
             api_logger.debug("传参缺少startTime")
-            return route.error_msgs['msg_lack_keys']
+            return route.error_msgs[302]['msg_request_params_incomplete']
         elif type(flask.request.json['startTime']) is not int:
             api_logger.debug("传参startTime类型错误")
-            return route.error_msgs['msg_value_type_error']
+            return route.error_msgs[301]['msg_value_type_error']
         elif flask.request.json['startTime'] < int(time.time()):
             api_logger.debug("传参startTime大小错误")
-            return route.error_msgs['msg_too_early']
+            return route.error_msgs[201]['msg_too_early']
         # 结束时间检查
         if 'endTime' not in flask.request.json:
             api_logger.debug("传参缺少endTime")
-            return route.error_msgs['msg_lack_keys']
+            return route.error_msgs[302]['msg_request_params_incomplete']
         elif type(flask.request.json['endTime']) is not int:
             api_logger.debug("传参endTime类型错误")
-            return route.error_msgs['msg_value_type_error']
+            return route.error_msgs[301]['msg_value_type_error']
         elif flask.request.json['endTime'] < flask.request.json['startTime'] + 10:
             api_logger.debug("传参endTime大小错误")
-            return route.error_msgs['msg_task_time_error']
+            return route.error_msgs[201]['msg_task_time_error']
         try:
             datetime_start_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(flask.request.json['startTime']))
             datetime_end_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(flask.request.json['endTime']))
         except:
-            return route.error_msgs['msg_data_error']
+            return route.error_msgs[201]['msg_data_error']
     # 如果runType为1则需要检查执行次数
     times = None
     if run_type == 1:
         if 'times' not in flask.request.json:
-            return route.error_msgs['msg_lack_keys']
+            return route.error_msgs[302]['msg_request_params_incomplete']
         elif type(flask.request.json['times']) is not int:
-            return route.error_msgs['msg_value_type_error']
+            return route.error_msgs[301]['msg_value_type_error']
         elif flask.request.json['times'] < 1:
-            return route.error_msgs['msg_data_error']
+            return route.error_msgs[201]['msg_data_error']
         times = flask.request.json['times']
 
     # 根据mail_address在缓存中查找账户id
@@ -118,10 +115,10 @@ def new_test_task():
             api_logger.debug(mail_address + "的账户基础信息读取成功")
         except Exception as e:
             api_logger.error(mail_address + "的账户基础信息读取失败，失败原因：" + repr(e))
-            return route.error_msgs['msg_db_error']
+            return route.error_msgs[500]['msg_db_error']
         else:
             if mysql_user_info is None:
-                return route.error_msgs['msg_no_user']
+                return route.error_msgs[201]['msg_no_user']
             else:
                 user_id = mysql_user_info.userId
     else:
@@ -131,7 +128,7 @@ def new_test_task():
             api_logger.debug(mail_address + "的缓存账户数据json格式化成功")
         except Exception as e:
             api_logger.error(mail_address + "的缓存账户数据json格式化失败，失败原因：" + repr(e))
-            return route.error_msgs['msg_json_format_fail']
+            return route.error_msgs[500]['msg_json_format_fail']
         else:
             user_id = redis_user_info_json['userId']
 
@@ -155,12 +152,12 @@ def new_test_task():
             api_logger.debug("接口测试计划工作台快照内容查找成功")
         except Exception as e:
             api_logger.debug("接口测试计划工作台快照内容查找失败，失败原因：" + repr(e))
-            return route.error_msgs['msg_db_error']
+            return route.error_msgs[500]['msg_db_error']
         else:
             # 如果查询出来存在记录并且为正式版本，则继续，否则返回错误信息
             # 需排除数据异常
             if not mysql_tablesnap:
-                return route.error_msgs['msg_no_data']
+                return route.error_msgs[201]['msg_no_data']
             else:
                 tablesnap_data = mysql_tablesnap.table
 
@@ -198,16 +195,16 @@ def new_test_task():
         if type(normal_v_user) is int and normal_v_user in range(1, 1001):
             new_task_info.vUser = normal_v_user
         else:
-            return route.error_msgs['msg_value_type_error']
+            return route.error_msgs[301]['msg_value_type_error']
     else:
-        return route.error_msgs['msg_lack_keys']
+        return route.error_msgs[302]['msg_request_params_incomplete']
     # 新增测试任务记录
     try:
         mysqlpool.session.add(new_task_info)
         mysqlpool.session.commit()
     except Exception as e:
         api_logger.error("新增测试任务失败，原因:" + repr(e))
-        return route.error_msgs['msg_db_error']
+        return route.error_msgs[500]['msg_db_error']
     else:
         api_logger.debug("新增测试任务成功")
 
@@ -221,7 +218,7 @@ def new_test_task():
             os.makedirs('file/')
         except Exception as e:
             api_logger.error('存放测试任务文件的file目录创建失败，原因:' + repr(e))
-            return route.error_msgs['msg_file_error']
+            return route.error_msgs[500]['msg_file_error']
         else:
             api_logger.debug('存放测试任务文件的file目录创建成功')
     the_now = datetime.datetime.now()
@@ -234,7 +231,7 @@ def new_test_task():
             os.makedirs('file/' + the_year)
         except Exception as e:
             api_logger.error('年份目录创建失败，原因:' + repr(e))
-            return route.error_msgs['msg_file_error']
+            return route.error_msgs[500]['msg_file_error']
         else:
             api_logger.debug('年份目录创建成功')
     if not os.path.exists('file/' + the_year + '/' + the_month):
@@ -243,7 +240,7 @@ def new_test_task():
             os.makedirs('file/' + the_year + '/' + the_month)
         except Exception as e:
             api_logger.error('月份目录创建失败，原因:' + repr(e))
-            return route.error_msgs['msg_file_error']
+            return route.error_msgs[500]['msg_file_error']
         else:
             api_logger.debug('月份目录创建成功')
     if not os.path.exists('file/' + the_year + '/' + the_month + '/' + the_day):
@@ -252,7 +249,7 @@ def new_test_task():
             os.makedirs('file/' + the_year + '/' + the_month + '/' + the_day)
         except Exception as e:
             api_logger.error('日子目录创建失败，原因:' + repr(e))
-            return route.error_msgs['msg_file_error']
+            return route.error_msgs[500]['msg_file_error']
         else:
             api_logger.debug('日子目录创建成功')
     dir_path = 'file/' + the_year + '/' + the_month + '/' + the_day
@@ -275,7 +272,7 @@ def new_test_task():
             shutil.copytree(resource_path, task_dir_path + '/files')
     except Exception as e:
         api_logger.error('测试任务目标目录创建失败，原因:' + repr(e))
-        return route.error_msgs['msg_file_error']
+        return route.error_msgs[500]['msg_file_error']
     else:
         api_logger.debug('测试任务目标目录创建成功')
         # 将测试任务数据存为json文件
@@ -301,7 +298,7 @@ def new_test_task():
         ).first()
     except Exception as e:
         api_logger.debug("model_mysql_planinfo数据读取失败，失败原因：" + repr(e))
-        return route.error_msgs['msg_db_error']
+        return route.error_msgs[500]['msg_db_error']
     else:
         # 根据计划类型下发测试任务
         if mysql_planinfo.planType == 1:
@@ -314,4 +311,4 @@ def new_test_task():
                 response_json['error_msg'] = '测试任务下发失败，原因:%s，请联系管理员或稍后再发起测试任务' % deploy_msg
                 return json.dumps(response_json)
 
-    return json.dumps(response_json)
+    return response_json
