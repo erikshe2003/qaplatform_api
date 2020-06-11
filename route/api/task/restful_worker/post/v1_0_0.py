@@ -87,4 +87,4 @@ def worker_post():
             response_json['data']['log_port'] = databaseconfig.get('mongodb', 'port')
             response_json['data']['log_name'] = databaseconfig.get('mongodb', 'username')
             response_json['data']['log_password'] = databaseconfig.get('mongodb', 'password')
-            return json.dumps(response_json)
+            return response_json

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import flask
-import json
 import route
 import datetime
 
@@ -10,13 +9,11 @@ from sqlalchemy import and_
 from handler.log import api_logger
 from handler.pool import mysqlpool
 
-from route.api.task import api_task
-
 from model.mysql import model_mysql_workerinfo
 from model.mysql import model_mysql_taskassign
 
 """
-    测试任务运行结束
+    测试任务运行结果
     ----校验
             校验worker是否存在
             校验task是否分配给了该worker
@@ -25,13 +22,12 @@ from model.mysql import model_mysql_taskassign
 """
 
 
-@api_task.route('/testTaskFinished.json', methods=['post'])
 @route.check_post_parameter(
     ['taskId', int, 1, None],
     ['uuid', str, 1, 100],
-    ['finishTime', str, 19, 19]
+    ['status', int, None, None]
 )
-def test_task_finished():
+def task_result_post():
     # 初始化返回内容
     response_json = {
         "error_code": 200,
@@ -42,13 +38,7 @@ def test_task_finished():
     # 取出taskId/uuid/finishTime
     task_id = flask.request.json['taskId']
     worker_uuid = flask.request.json['uuid']
-    finish_time = flask.request.json['finishTime']
-
-    # 校验finishTime是否合法
-    try:
-        datetime.datetime.strptime(finish_time, '%Y-%m-%d %H:%M:%S')
-    except:
-        return route.error_msgs['msg_value_type_error']
+    task_status = flask.request.json['status']
 
     # 根据uuid在查找workerId
     try:
@@ -57,10 +47,10 @@ def test_task_finished():
         ).first()
     except Exception as e:
         api_logger.debug("worker_data query failed:" + repr(e))
-        return route.error_msgs['msg_db_error']
+        return route.error_msgs[500]['msg_db_error']
     else:
         if worker_data is None:
-            return route.error_msgs['msg_worker_not_exist']
+            return route.error_msgs[201]['msg_worker_not_exist']
 
     # 根据taskId以及workerId查询分配记录
     try:
@@ -72,12 +62,17 @@ def test_task_finished():
         ).first()
     except Exception as e:
         api_logger.debug("assign_data query failed:" + repr(e))
-        return route.error_msgs['msg_db_error']
+        return route.error_msgs[500]['msg_db_error']
     else:
         if assign_data is None:
-            return route.error_msgs['msg_no_assign']
+            return route.error_msgs[201]['msg_no_assign']
         else:
-            assign_data.finishTime = finish_time
+            assign_data.status = task_status
+            assign_data.updateTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            if task_status == 10:
+                assign_data.finishTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            elif task_status == 3:
+                assign_data.startTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             mysqlpool.session.commit()
 
-    return json.dumps(response_json)
+    return response_json
