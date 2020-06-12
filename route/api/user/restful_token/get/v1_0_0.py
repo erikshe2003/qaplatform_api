@@ -2,11 +2,7 @@
 
 import flask
 import re
-import json
 
-from route.api.user import user_apis
-
-from handler.log import api_logger
 from handler.api.error import ApiError
 from handler.api.check import ApiCheck
 
@@ -18,8 +14,7 @@ from handler.api.check import ApiCheck
 # 3.校验令牌是否有效
 # ----操作
 # 4.返回信息
-@user_apis.route('/checkToken.json', methods=["post"])
-def check_token():
+def token_get():
     # 初始化返回内容
     response_json = {
         "error_code": 200,
@@ -27,38 +22,27 @@ def check_token():
         "data": {}
     }
 
-    # 1.校验传参
-    # 取出请求参数
-    try:
-        request_json = flask.request.json
-    except Exception as e:
-        logmsg = "/checkToken.json数据格式化失败，失败原因：" + repr(e)
-        api_logger.error(logmsg)
-        return ApiError.requestfail_error("接口数据异常")
-    else:
-        if request_json is None:
-            return ApiError.requestfail_error("接口数据异常")
     # 检查必传项是否遗留
     # mail_address
-    if "mail_address" not in request_json:
+    if "mail_address" not in flask.request.args:
         return ApiError.requestfail_nokey("mail_address")
     # user_token
-    if "user_token" not in request_json:
+    if "user_token" not in flask.request.args:
         return ApiError.requestfail_nokey("user_token")
     # 检查通过
     # 检查必传项内容格式
     # mail_address
-    if type(request_json["mail_address"]) is not str or len(request_json["mail_address"]) > 100:
+    if type(flask.request.args["mail_address"]) is not str or len(flask.request.args["mail_address"]) > 100:
         return ApiError.requestfail_value("mail_address")
-    if re.search("^[0-9a-zA-Z_]{1,100}@fclassroom.com$", request_json["mail_address"]) is None:
+    if re.search("^[0-9a-zA-Z_]{1,100}@fclassroom.com$", flask.request.args["mail_address"]) is None:
         return ApiError.requestfail_value("mail_address")
     # record_code
-    if type(request_json["user_token"]) is not str or len(request_json["user_token"]) > 100:
+    if type(flask.request.args["user_token"]) is not str or len(flask.request.args["user_token"]) > 100:
         return ApiError.requestfail_value("user_token")
 
     # 取出传入参数值
-    requestvalue_mail = request_json["mail_address"]
-    requestvalue_token = request_json["user_token"]
+    requestvalue_mail = flask.request.args["mail_address"]
+    requestvalue_token = flask.request.args["user_token"]
 
     # 2.校验账户是否存在
     userdata = ApiCheck.check_user(requestvalue_mail)
@@ -90,4 +74,4 @@ def check_token():
     # 定义msg
     response_json["error_msg"] = "token有效"
     # 最后返回内容
-    return json.dumps(response_json)
+    return response_json
