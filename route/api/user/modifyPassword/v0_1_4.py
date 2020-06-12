@@ -53,7 +53,7 @@ def modify_password():
 
     # 判断新密码与确认密码是否一致
     if new_password != confirm_password:
-        return route.error_msgs['msg_new_password_inconformity']
+        return route.error_msgs[201]['msg_new_password_inconformity']
 
     # 根据mail_address在缓存中查找账户id以及旧密码
     redis_user_info = model_redis_userinfo.query(user_email=mail_address)
@@ -66,10 +66,10 @@ def modify_password():
             db_logger.debug(mail_address + "的账户基础信息读取成功")
         except Exception as e:
             db_logger.error(mail_address + "的账户基础信息读取失败，失败原因：" + repr(e))
-            return route.error_msgs['msg_db_error']
+            return route.error_msgs[500]['msg_db_error']
         else:
             if mysql_user_info is None:
-                return route.error_msgs['msg_no_user']
+                return route.error_msgs[201]['msg_no_user']
             else:
                 user_id = mysql_user_info.userId
                 user_pass = mysql_user_info.userPassword
@@ -80,14 +80,14 @@ def modify_password():
             db_logger.debug(mail_address + "的缓存账户数据json格式化成功")
         except Exception as e:
             db_logger.error(mail_address + "的缓存账户数据json格式化失败，失败原因：" + repr(e))
-            return route.error_msgs['msg_json_format_fail']
+            return route.error_msgs[500]['msg_json_format_fail']
         else:
             user_id = redis_user_info_json['userId']
             user_pass = redis_user_info_json['userPassword']
 
     # 根据userId查询旧密码，并判断一致性
     if user_pass != old_password:
-        return route.error_msgs['msg_old_password_incorrect']
+        return route.error_msgs[201]['msg_old_password_incorrect']
     else:
         # 更新mysql密码
         mysql_new_user_info = model_mysql_userinfo.query.filter(
@@ -98,7 +98,7 @@ def modify_password():
             mysqlpool.session.commit()
         except Exception as e:
             db_logger.error(mail_address + "的账户基础信息更新失败，失败原因：" + repr(e))
-            return route.error_msgs['msg_db_error']
+            return route.error_msgs[500]['msg_db_error']
         # 更新redis密码
         try:
             model_redis_userinfo.set(
