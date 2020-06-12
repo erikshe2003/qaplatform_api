@@ -3,7 +3,6 @@
 import flask
 import re
 import datetime
-import json
 import uuid
 
 from handler.api.error import ApiError
@@ -13,8 +12,6 @@ from handler.mail import publicmailer
 from handler.pool import mysqlpool
 from handler.log import api_logger
 from handler.config import appconfig
-
-from route.api.user import user_apis
 
 from model.mysql import model_mysql_userinfo, model_mysql_useroperationrecord
 from model.redis import model_redis_userinfo
@@ -33,8 +30,7 @@ from model.redis import model_redis_userinfo
 # 6.保存账户头像
 # 7.修改账户昵称/个人简介
 # 9.返回成功信息
-@user_apis.route('/setBaseInfo.json', methods=["post"])
-def set_base_info():
+def user_info_put():
     # 初始化返回内容
     response_json = {
         "error_code": 200,
@@ -275,5 +271,4 @@ def set_base_info():
 
     # 8.返回成功信息
     # 最后返回内容
-    return json.dumps(response_json)
-
+    return response_json
