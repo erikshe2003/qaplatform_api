@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import flask
-import json
 import re
 import datetime
 import uuid
@@ -12,8 +11,6 @@ from handler.config import appconfig
 from handler.log import api_logger
 from handler.api.error import ApiError
 from handler.api.check import ApiCheck
-
-from route.api.user import user_apis
 
 from model.mysql import model_mysql_useroperationrecord
 
@@ -26,8 +23,7 @@ from model.mysql import model_mysql_useroperationrecord
 # ----操作
 # 4.尝试发送包含账户信息确认页url的邮件
 # 5.返回信息给前端
-@user_apis.route('/resetPasswordApply.json', methods=["post"])
-def reset_password_apply():
+def user_password_reset_apply_post():
     # 初始化返回内容
     response_json = {
         "error_code": 200,
@@ -138,4 +134,4 @@ def reset_password_apply():
     # 定义msg
     response_json["error_msg"] = "操作成功，请查收重置密码邮件"
     # 最后返回内容
-    return json.dumps(response_json)
+    return response_json
