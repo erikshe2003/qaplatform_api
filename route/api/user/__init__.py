@@ -27,12 +27,16 @@ from flask_restful import Api
 
 from .token import Token
 from .user_info import UserInfo
+from .user_mail import UserMail
 from .user_permission import UserPermission
 from .user_password import UserPassword
+from .new_user_info import NewUserInfo
 
 api_user = Blueprint('api_user', __name__)
 api = Api(api_user)
 api.add_resource(Token, '/token.json')
 api.add_resource(UserInfo, '/userInfo.json')
+api.add_resource(UserMail, '/userMail.json')
 api.add_resource(UserPermission, '/userPermission.json')
 api.add_resource(UserPassword, '/userPassword.json')
+api.add_resource(NewUserInfo, '/newUserInfo.json')

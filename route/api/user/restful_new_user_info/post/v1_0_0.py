@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import flask
-import json
 import re
 import datetime
 import uuid
@@ -12,8 +11,6 @@ from handler.api.error import ApiError
 from handler.api.check import ApiCheck
 from handler.config import appconfig
 from handler.log import api_logger
-
-from route.api.user import user_apis
 
 from model.mysql import model_mysql_useroperationrecord
 from model.mysql import model_mysql_userinfo
@@ -29,8 +26,7 @@ from model.redis import model_redis_userinfo
 # 4.如果账户存在但状态为未激活，则将先前的账户操作记录数据置为无效，然后插入新的未完成的操作记录
 # 5.尝试发送包含账户信息确认页url的邮件
 # 6.返回信息给前端
-@user_apis.route('/registerApply.json', methods=["post"])
-def register_apply():
+def new_user_info_post():
     # 初始化返回内容
     response_json = {
         "error_code": 200,
@@ -233,4 +229,4 @@ def register_apply():
     # 定义msg
     response_json["error_msg"] = "操作成功，请查收账户注册邮件"
     # 最后返回内容
-    return json.dumps(response_json)
+    return response_json
