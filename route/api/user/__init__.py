@@ -31,6 +31,8 @@ from .user_mail import UserMail
 from .user_permission import UserPermission
 from .user_password import UserPassword
 from .new_user_info import NewUserInfo
+from .user_password_reset_apply import UserPasswordResetApply
+from .key_action_code import KeyActionCode
 
 api_user = Blueprint('api_user', __name__)
 api = Api(api_user)
@@ -40,3 +42,5 @@ api.add_resource(UserMail, '/userMail.json')
 api.add_resource(UserPermission, '/userPermission.json')
 api.add_resource(UserPassword, '/userPassword.json')
 api.add_resource(NewUserInfo, '/newUserInfo.json')
+api.add_resource(UserPasswordResetApply, '/userPasswordResetApply.json')
+api.add_resource(KeyActionCode, '/keyActionCode.json')
