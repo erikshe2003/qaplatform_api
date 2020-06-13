@@ -68,6 +68,7 @@ error_msgs = {
         'msg_request_params_incomplete': {"error_code": 302, "error_msg": "缺少必传参数", "data": {}}
     },
     500: {
+        'msg_server_error': {"error_code": 500, "error_msg": "服务异常", "data": {}},
         'msg_db_error': {"error_code": 500, "error_msg": "数据查询失败", "data": {}},
         'msg_redis_error': {"error_code": 500, "error_msg": "缓存处理失败", "data": {}},
         'msg_db_update_error': {"error_code": 500, "error_msg": "数据更新失败", "data": {}},
@@ -658,61 +659,68 @@ def check_delete_parameter(*keys):
         @wraps(func)
         def wrapper(*args, **kwargs):
             if flask.request.method == "DELETE":
-                # 检查forms
-                api_logger.debug("准备检查请求内的参数")
+                request_url = flask.request.url
+                api_logger.debug("URL:" + request_url + "准备检查请求格式")
                 try:
-                    request_forms = flask.request.form
+                    request_parameters = flask.request.args
                 except Exception as e:
-                    api_logger.warn("请求内的参数检查失败，原因：" + repr(e))
-                    return error_msgs[301]['msg_request_params_illegal']
+                    api_logger.error("URL:" + request_url + "格式检查失败，原因：" + repr(e))
+                    return error_msgs[301]['msg_request_body_not_json']
                 else:
-                    if not request_forms:
-                        return error_msgs[301]['msg_request_params_illegal']
+                    if not request_parameters:
+                        return error_msgs[301]['msg_request_body_not_url_args']
+                # 检查必传项目
+                for key in keys:
+                    # 1.检查有无
+                    # 如果缺少必传项
+                    if key[0] not in request_parameters:
+                        return error_msgs[302]['msg_request_params_incomplete']
                     else:
-                        # 检查必传项目
-                        for check_form in keys:
-                            # 如果缺少必传项
-                            if check_form[0] not in request_forms:
-                                return error_msgs[302]['msg_request_params_incomplete']
+                        value = request_parameters[key[0]]
+                        # 对于get请求，传入的参数默认都是字符串
+                        # 2.检查类型，并同时检查大小或者长度
+                        # 根据参数检查要求，尝试进行转换
+                        if key[1] is int:
+                            # 类型
+                            try:
+                                ivalue = int(value)
+                            except Exception as e:
+                                api_logger.debug("URL:" + request_url + "格式检查失败，原因：" + repr(e))
+                                return error_msgs[301]['msg_value_type_error']
                             else:
-                                request_form = request_forms[check_form[0]]
-                                # 先检查类型
-                                # 由于form类型的值传递时实际都为字符串，故要先尝试转换
-                                try:
-                                    request_form_trans = check_form[1](request_form)
-                                except Exception as e:
-                                    api_logger.warn("表单数据转换失败，原因：" + repr(e))
-                                    return error_msgs[301]['msg_request_params_illegal']
-                                else:
-                                    check_flag = True
-                                    # 如果bool
-                                    # 不检查
-                                    if check_form[1] is bool:
-                                        pass
-                                    # 如果int
-                                    if check_form[1] is int:
-                                        # 如果有最小值限定
-                                        if check_form[2] and request_form_trans < check_form[2]:
-                                            check_flag = False
-                                        # 如果有最大值限定
-                                        if check_form[3] and request_form_trans > check_form[3]:
-                                            check_flag = False
-                                        # 判断失败
-                                        if not check_flag:
-                                            return error_msgs[301]['msg_request_params_illegal']
-                                    # 如果str
-                                    if check_form[1] is str:
-                                        # 如果有最小值限定
-                                        if check_form[2] and len(request_form_trans) < check_form[2]:
-                                            check_flag = False
-                                        # 如果有最大值限定
-                                        if check_form[3] and len(request_form_trans) > check_form[3]:
-                                            check_flag = False
-                                        # 判断失败
-                                        if not check_flag:
-                                            return error_msgs[301]['msg_request_params_illegal']
-            else:
-                api_logger.debug("请求方法非DELETE，实际为%s" % flask.request.method)
+                                # 大小
+                                # 如果有最小值和最大值
+                                if key[2] and key[3]:
+                                    if ivalue > key[3] or ivalue < key[2]:
+                                        api_logger.debug("URL:" + request_url + "格式检查失败，原因：参数%s不在区间范围内" % key[0])
+                                        return error_msgs[301]['msg_value_type_error']
+                                # 如果只有最小值
+                                elif key[2]:
+                                    if ivalue < key[2]:
+                                        api_logger.debug("URL:" + request_url + "格式检查失败，原因：参数%s小于最小值" % key[0])
+                                        return error_msgs[301]['msg_value_type_error']
+                                # 如果只有最大值
+                                elif key[3]:
+                                    if ivalue > key[3]:
+                                        api_logger.debug("URL:" + request_url + "格式检查失败，原因：参数%s超出最大值" % key[0])
+                                        return error_msgs[301]['msg_value_type_error']
+                        elif key[1] is str:
+                            # 大小
+                            # 如果有最小值和最大值
+                            if key[2] and key[3]:
+                                if len(value) > key[3] or len(value) < key[2]:
+                                    api_logger.debug("URL:" + request_url + "格式检查失败，原因：参数%s不在区间范围内" % key[0])
+                                    return error_msgs[301]['msg_value_type_error']
+                            # 如果只有最小值
+                            elif key[2]:
+                                if len(value) < key[2]:
+                                    api_logger.debug("URL:" + request_url + "格式检查失败，原因：参数%s小于最小值" % key[0])
+                                    return error_msgs[301]['msg_value_type_error']
+                            # 如果只有最大值
+                            elif key[3]:
+                                if len(value) > key[3]:
+                                    api_logger.debug("URL:" + request_url + "格式检查失败，原因：参数%s超出最大值" % key[0])
+                                    return error_msgs[301]['msg_value_type_error']
             return func(*args, **kwargs)
         return wrapper
     return decorator

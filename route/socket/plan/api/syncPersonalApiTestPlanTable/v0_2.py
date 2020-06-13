@@ -214,10 +214,10 @@ def check_owner(plan_id, mail):
         ).first()
     except Exception as e:
         api_logger.error("model_mysql_planinfo数据读取失败，失败原因：" + repr(e))
-        return None, route.error_msgs['msg_db_error']
+        return None, route.error_msgs[500]['msg_db_error']
     else:
         if mysql_plan_info is None:
-            return None, route.error_msgs['msg_no_plan']
+            return None, route.error_msgs[201]['msg_no_plan']
         else:
             plan_user_id = mysql_plan_info.ownerId
 
@@ -232,10 +232,10 @@ def check_owner(plan_id, mail):
             api_logger.debug("model_mysql_userinfo数据读取成功")
         except Exception as e:
             api_logger.error("model_mysql_userinfo数据读取失败，失败原因：" + repr(e))
-            return None, route.error_msgs['msg_db_error']
+            return None, route.error_msgs[500]['msg_db_error']
         else:
             if mysql_userinfo is None:
-                return None, route.error_msgs['msg_no_user']
+                return None, route.error_msgs[201]['msg_no_user']
             else:
                 request_user_id = mysql_userinfo.userId
     else:
@@ -245,7 +245,7 @@ def check_owner(plan_id, mail):
             api_logger.debug("redis_userinfo_json缓存账户数据json格式化成功")
         except Exception as e:
             api_logger.error("redis_userinfo_json缓存账户数据json格式化失败，失败原因：" + repr(e))
-            return None, route.error_msgs['msg_json_format_fail']
+            return None, route.error_msgs[500]['msg_json_format_fail']
         else:
             request_user_id = redis_userinfo_json['userId']
 
