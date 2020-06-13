@@ -28,9 +28,11 @@ from flask_restful import Api
 from .token import Token
 from .user_info import UserInfo
 from .user_permission import UserPermission
+from .user_password import UserPassword
 
 api_user = Blueprint('api_user', __name__)
 api = Api(api_user)
 api.add_resource(Token, '/token.json')
 api.add_resource(UserInfo, '/userInfo.json')
 api.add_resource(UserPermission, '/userPermission.json')
+api.add_resource(UserPassword, '/userPassword.json')
