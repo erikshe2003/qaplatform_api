@@ -8,10 +8,10 @@ class UserInfoR:
     def __init__(self):
         self.key = "userInfo"
 
-    # 支持根据邮箱地址查询账户信息
-    def query(self, user_email):
+    # 支持根据用户登录名查询账户信息
+    def query(self, user_id):
         try:
-            data = redispool.hget(self.key, user_email)
+            data = redispool.hget(self.key, user_id)
             logmsg = "Redis查询|" + self.key + "查询成功"
             db_logger.debug(logmsg)
             return data
@@ -19,10 +19,10 @@ class UserInfoR:
             logmsg = "Redis查询|" + self.key + "查询失败，失败原因：" + repr(e)
             db_logger.error(logmsg)
 
-    # 支持根据邮箱地址缓存内容
-    def set(self, user_email, value):
+    # 支持根据用户登录名缓存内容
+    def set(self, user_id, value):
         try:
-            redispool.hset(self.key, user_email, value)
+            redispool.hset(self.key, user_id, value)
             logmsg = "Redis值设定|" + self.key + "值设定成功"
             db_logger.debug(logmsg)
             return True
@@ -31,10 +31,10 @@ class UserInfoR:
             db_logger.error(logmsg)
             return False
 
-    # 根据邮箱地址删除缓存基础信息
-    def delete(self, user_email):
+    # 根据用户登录名删除缓存基础信息
+    def delete(self, user_id):
         try:
-            redispool.hdel(self.key, user_email)
+            redispool.hdel(self.key, user_id)
             logmsg = "Redis值删除|" + self.key + "值对应缓存数据删除"
             db_logger.debug(logmsg)
             return True

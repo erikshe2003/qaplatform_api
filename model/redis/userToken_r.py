@@ -9,9 +9,9 @@ class UserTokenR:
         self.key = "userToken"
 
     # 支持根据邮箱地址查询token值以及token有效期
-    def query(self, user_email):
+    def query(self, user_id):
         try:
-            data = redispool.hget(self.key, user_email)
+            data = redispool.hget(self.key, user_id)
             logmsg = "Redis查询|" + self.key + "查询成功"
             db_logger.debug(logmsg)
             return data
@@ -20,9 +20,9 @@ class UserTokenR:
             db_logger.error(logmsg)
 
     # 支持根据邮箱地址缓存内容
-    def set(self, user_email, value):
+    def set(self, user_id, value):
         try:
-            redispool.hset(self.key, user_email, value)
+            redispool.hset(self.key, user_id, value)
             logmsg = "Redis值设定|" + self.key + "值设定成功"
             db_logger.debug(logmsg)
             return True
@@ -32,9 +32,9 @@ class UserTokenR:
             return False
 
     # 根据邮箱地址删除缓存token
-    def delete(self, user_email):
+    def delete(self, user_id):
         try:
-            redispool.hdel(self.key, user_email)
+            redispool.hdel(self.key, user_id)
             logmsg = "Redis值删除|" + self.key + "值对应缓存数据删除"
             db_logger.debug(logmsg)
             return True

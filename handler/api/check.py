@@ -22,7 +22,7 @@ from model.mysql import model_mysql_apiinfo
 
 
 class ApiCheck:
-    # 根据传入的邮件地址判断账户信息在redis以及mysql中是否存在
+    # 根据传入的login_name判断账户信息在redis以及mysql中是否存在
     # 如果在redis中查询成功，则返回账户信息
     # 如果在redis中未查询到，则查询mysql，将结果写入redis后返回账户信息
     # 如果在mysql中未查询到，则返回无账户信息
@@ -55,10 +55,11 @@ class ApiCheck:
     #     "userRoleId": None
     # }
     @classmethod
-    def check_user(cls, mail):
+    def check_user(cls, user_id):
         data = {
             "exist": None,
             "userId": None,
+            "userLoginName": None,
             "userNickName": None,
             "userEmail": None,
             "userPassword": None,
@@ -68,7 +69,7 @@ class ApiCheck:
         # 校验账户状态
         # 从缓存中查询账户基础信息
         try:
-            uinfo_redis = model_redis_userinfo.query(user_email=mail)
+            uinfo_redis = model_redis_userinfo.query(user_id=user_id)
         except Exception as e:
             logmsg = "缓存中账户信息读取失败，失败原因：" + repr(e)
             api_logger.error(logmsg)
@@ -82,8 +83,9 @@ class ApiCheck:
                 api_logger.debug(logmsg)
                 data["exist"] = True
                 data["userId"] = uinfo["userId"]
+                data["userLoginName"] = uinfo["userLoginName"]
                 data["userNickName"] = uinfo["userNickName"]
-                data["userEmail"] = mail
+                data["userEmail"] = uinfo["userEmail"]
                 data["userPassword"] = uinfo["userPassword"]
                 data["userStatus"] = uinfo["userStatus"]
                 data["userRoleId"] = uinfo["userRoleId"]
@@ -99,7 +101,7 @@ class ApiCheck:
         else:
             # 尝试从mysql中查询
             try:
-                uinfo_mysql = model_mysql_userinfo.query.filter_by(userEmail=mail).first()
+                uinfo_mysql = model_mysql_userinfo.query.filter_by(userId=user_id).first()
             except Exception as e:
                 logmsg = "数据库中账户信息读取失败，失败原因：" + repr(e)
                 api_logger.error(logmsg)
@@ -123,8 +125,15 @@ class ApiCheck:
                 #   \"userRoleId\":int"
                 try:
                     model_redis_userinfo.set(
-                        mail,
+                        user_id,
                         "{\"userId\":" + str(uinfo_mysql.userId) +
+                        ",\"userEmail\":" + (
+                            "\"" + str(
+                                uinfo_mysql.userEmail) + "\"" if uinfo_mysql.userEmail is not None else "null"
+                        ) +
+                        ",\"userLoginName\":" + (
+                            "\"" + str(uinfo_mysql.userLoginName) + "\"" if uinfo_mysql.userLoginName is not None else "null"
+                        ) +
                         ",\"userNickName\":" + (
                             "\"" + str(uinfo_mysql.userNickName) + "\"" if uinfo_mysql.userNickName is not None else "null"
                         ) +
@@ -139,6 +148,7 @@ class ApiCheck:
                     # 返回账户信息
                     data["exist"] = True
                     data["userId"] = uinfo_mysql.userId
+                    data["userLoginName"] = uinfo_mysql.userLoginName
                     data["userNickName"] = uinfo_mysql.userNickName
                     data["userEmail"] = uinfo_mysql.userEmail
                     data["userPassword"] = uinfo_mysql.userPassword
