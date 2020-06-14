@@ -29,6 +29,7 @@ error_msgs = {
         'msg_new_password_inconformity': {"error_code": 201, "error_msg": "两次密码不一致", "data": {}},
         'msg_need_register': {"error_code": 201, "error_msg": "账户未激活", "data": {}},
         'msg_no_user': {"error_code": 201, "error_msg": "账户不存在", "data": {}},
+        'msg_mail_exist': {"error_code": 201, "error_msg": "邮箱已被注册", "data": {}},
         'msg_no_role': {"error_code": 201, "error_msg": "角色不存在", "data": {}},
         'msg_no_plan': {"error_code": 201, "error_msg": "测试计划不存在", "data": {}},
         'msg_no_test_task': {"error_code": 201, "error_msg": "无测试任务", "data": {}},
@@ -98,24 +99,24 @@ def check_token(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         # 首先检查必传参数Mail/Token
-        if 'Mail' not in flask.request.headers or 'Token' not in flask.request.headers:
+        if 'UserId' not in flask.request.headers or 'Token' not in flask.request.headers:
             return error_msgs[302]['msg_request_params_incomplete']
         # 然后检查token是否正确
         # 去缓存的token中查询Mail，不存在的话即为从来没登陆过
         # redis查询无错误信息，不作try处理
-        api_logger.debug("准备查询" + flask.request.headers['Mail'] + "的缓存token数据")
-        tdata = model_redis_usertoken.query(flask.request.headers['Mail'])
+        api_logger.debug("准备查询" + flask.request.headers['UserId'] + "的缓存token数据")
+        tdata = model_redis_usertoken.query(flask.request.headers['UserId'])
         if tdata is None:
-            api_logger.debug(flask.request.headers['Mail'] + "的缓存token数据为空")
+            api_logger.debug(flask.request.headers['UserId'] + "的缓存token数据为空")
             return error_msgs[201]['msg_before_login']
         else:
-            api_logger.debug(flask.request.headers['Mail'] + "的缓存token数据存在")
+            api_logger.debug(flask.request.headers['UserId'] + "的缓存token数据存在")
             # 格式化缓存基础信息内容
             try:
                 t = json.loads(tdata.decode("utf8"))
-                api_logger.debug(flask.request.headers['Mail'] + "的缓存token数据json格式化成功")
+                api_logger.debug(flask.request.headers['UserId'] + "的缓存token数据json格式化成功")
             except Exception as e:
-                api_logger.error(flask.request.headers['Mail'] + "的缓存token数据json格式化失败，失败原因：" + repr(e))
+                api_logger.error(flask.request.headers['UserId'] + "的缓存token数据json格式化失败，失败原因：" + repr(e))
                 return error_msgs[500]['msg_json_format_fail']
             # 判断是否一致且有效
             # 判断是否过期
@@ -147,20 +148,20 @@ def check_user(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         # 首先检查必传参数Mail/Token
-        if 'Mail' not in flask.request.headers:
+        if 'UserId' not in flask.request.headers:
             return error_msgs[302]['msg_request_params_incomplete']
-        mail_address = flask.request.headers['Mail']
-        api_logger.debug("准备查询" + mail_address + "的缓存账户数据")
-        uinfo_redis = model_redis_userinfo.query(user_email=mail_address)
+        user_id = flask.request.headers['UserId']
+        api_logger.debug("准备查询缓存账户数据")
+        uinfo_redis = model_redis_userinfo.query(user_id=user_id)
         # 如果缓存中查询到了
         if uinfo_redis is not None:
-            api_logger.debug(mail_address + "的缓存账户数据存在")
+            api_logger.debug("缓存账户数据存在")
             # 格式化缓存基础信息内容
             try:
                 uinfo = json.loads(uinfo_redis.decode("utf8"))
-                api_logger.debug(mail_address + "的缓存账户数据json格式化成功")
+                api_logger.debug("缓存账户数据json格式化成功")
             except Exception as e:
-                api_logger.error(mail_address + "的缓存账户数据json格式化失败，失败原因：" + repr(e))
+                api_logger.error("缓存账户数据json格式化失败，失败原因：" + repr(e))
                 return error_msgs[500]['msg_json_format_fail']
             else:
                 # 判断账户状态
@@ -172,14 +173,14 @@ def check_user(func):
                     return error_msgs[201]['msg_status_error']
         # 如果缓存中未查询到
         else:
-            api_logger.debug(mail_address + "的缓存账户数据为空")
+            api_logger.debug("缓存账户数据为空")
             # 尝试从mysql中查询
             try:
-                api_logger.debug("准备查询" + mail_address + "的账户数据")
-                uinfo_mysql = model_mysql_userinfo.query.filter_by(userEmail=mail_address).first()
-                api_logger.debug(mail_address + "的账户数据查询成功")
+                api_logger.debug("准备查询账户数据")
+                uinfo_mysql = model_mysql_userinfo.query.filter_by(userId=user_id).first()
+                api_logger.debug("账户数据查询成功")
             except Exception as e:
-                api_logger.error(mail_address + "的账户数据查询失败，失败原因：" + repr(e))
+                api_logger.error("账户数据查询失败，失败原因：" + repr(e))
                 return error_msgs[500]['msg_db_error']
             else:
                 # 如果mysql中未查询到
@@ -195,10 +196,14 @@ def check_user(func):
                     #   \"userPassword\":str,
                     #   \"userStatus\":int,
                     #   \"userRoleId\":int"
-                    api_logger.debug("准备记录" + mail_address + "的账户缓存数据")
+                    api_logger.debug("准备记录账户缓存数据")
                     model_redis_userinfo.set(
-                        mail_address,
+                        user_id,
                         "{\"userId\":" + str(uinfo_mysql.userId) +
+                        ",\"userLoginName\":" + (
+                            "\"" + str(uinfo_mysql.userLoginName) +
+                            "\"" if uinfo_mysql.userLoginName is not None else "null"
+                        ) +
                         ",\"userNickName\":" + (
                             "\"" + str(uinfo_mysql.userNickName) +
                             "\"" if uinfo_mysql.userNickName is not None else "null"
@@ -206,6 +211,10 @@ def check_user(func):
                         ",\"userPassword\":" + (
                             "\"" + str(uinfo_mysql.userPassword) +
                             "\"" if uinfo_mysql.userPassword is not None else "null"
+                        ) +
+                        ",\"userEmail\":" + (
+                            "\"" + str(uinfo_mysql.userEmail) +
+                            "\"" if uinfo_mysql.userEmail is not None else "null"
                         ) +
                         ",\"userStatus\":" + str(uinfo_mysql.userStatus) +
                         ",\"userRoleId\":" + (

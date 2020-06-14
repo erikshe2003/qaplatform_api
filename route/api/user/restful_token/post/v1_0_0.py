@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import flask
-import re
 import datetime
 import uuid
+import route
+
+from model.mysql import model_mysql_userinfo
 
 from model.redis import model_redis_usertoken
 
@@ -21,78 +23,54 @@ from handler.api.check import ApiCheck
 # 4.读取账户权限信息，封装基础信息
 # 5.将token写入redis
 # 6.返回信息
+@route.check_post_parameter(
+    ['login_name', str, 1, None],
+    ['login_password', str, 1, None],
+    ['is_checked', bool]
+)
 def token_post():
     # 初始化返回内容
     response_json = {
         "error_code": 200,
         "error_msg": "",
         "data": {
-            "access_token": {}
+            "user_id": 0,
+            "access_token": ''
         }
     }
 
-    # 1.校验传参
-    # 取出请求参数
-    try:
-        request_json = flask.request.json
-    except Exception as e:
-        logmsg = "/login.json数据格式化失败，失败原因：" + repr(e)
-        api_logger.error(logmsg)
-        return ApiError.requestfail_error("接口数据异常")
-    else:
-        if request_json is None:
-            return ApiError.requestfail_error("接口数据异常")
-    # 检查必传项是否遗留
-    # mail_address
-    if "mail_address" not in request_json:
-        return ApiError.requestfail_nokey("mail_address")
-    # login_password
-    elif "login_password" not in request_json:
-        return ApiError.requestfail_nokey("login_password")
-    # is_checked
-    elif "is_checked" not in request_json:
-        return ApiError.requestfail_nokey("is_checked")
-    # 检查通过
-    # 检查必传项内容格式
-    # mail_address
-    if type(request_json["mail_address"]) is not str or len(request_json["mail_address"]) > 100:
-        return ApiError.requestfail_value("mail_address")
-    if re.search("^[0-9a-zA-Z_]{1,100}@fclassroom.com$", request_json["mail_address"]) is None:
-        return ApiError.requestfail_value("mail_address")
-    # login_password
-    if type(request_json["login_password"]) is not str:
-        return ApiError.requestfail_value("login_password")
-    # is_checked
-    if type(request_json["is_checked"]) is not bool:
-        return ApiError.requestfail_value("is_checked")
-    # 检查通过
-
     # 取出传入参数值
-    requestvalue_mail = request_json["mail_address"]
-    requestvalue_password = request_json["login_password"]
-    requestvalue_check = request_json["is_checked"]
+    requestvalue_name = flask.request.json["login_name"]
+    requestvalue_password = flask.request.json["login_password"]
+    requestvalue_check = flask.request.json["is_checked"]
 
-    # 2.校验账户是否存在以及状态是否为正常
-    userdata = ApiCheck.check_user(requestvalue_mail)
-    if userdata["exist"] is False:
-        return ApiError.requestfail_error("账户不存在")
-    elif userdata["exist"] is True and userdata["userStatus"] == 1:
-        pass
-    elif userdata["exist"] is True and userdata["userStatus"] == 0:
-        return ApiError.requestfail_error("账户未激活")
-    elif userdata["exist"] is True and userdata["userStatus"] == -1:
-        return ApiError.requestfail_error("账户已禁用")
+    # 尝试从mysql中查询
+    try:
+        uinfo_mysql = model_mysql_userinfo.query.filter_by(
+            userLoginName=requestvalue_name
+        ).first()
+    except:
+        return route.error_msgs[500]['msg_db_error']
     else:
-        return ApiError.requestfail_error("账户信息校验异常")
+        if uinfo_mysql is None:
+            return route.error_msgs[201]['msg_no_user']
+        elif uinfo_mysql.userStatus == 1:
+            pass
+        elif uinfo_mysql.userStatus == 0:
+            return route.error_msgs[201]['msg_need_register']
+        elif uinfo_mysql.userStatus == -1:
+            return route.error_msgs[201]['msg_be_forbidden']
+        else:
+            return route.error_msgs[201]['msg_status_error']
 
     # 3.校验账户密码是否正确
-    if requestvalue_password != userdata["userPassword"]:
+    if requestvalue_password != uinfo_mysql.userPassword:
         return ApiError.requestfail_error("登陆密码错误")
 
     # 定义data中的user_info
     user_token = str(
         uuid.uuid3(
-            uuid.NAMESPACE_DNS, requestvalue_mail + str(
+            uuid.NAMESPACE_DNS, requestvalue_name + str(
                 datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             )
         )
@@ -105,11 +83,12 @@ def token_post():
     else:
         t = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')
     model_redis_usertoken.set(
-        requestvalue_mail,
+        uinfo_mysql.userId,
         "{\"userToken\":\"" + user_token + "\"," +
         "\"validTime\":\"" + t +
         "\"}"
     )
+    response_json["data"]["user_id"] = uinfo_mysql.userId
 
     # 6.返回信息
     response_json["error_msg"] = "账户登陆成功"

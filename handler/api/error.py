@@ -15,8 +15,7 @@ class ApiError:
             "error_msg": msg,
             "data": {}
         }
-        response = json.dumps(response_json)
-        return response
+        return response_json
 
     # 缺少必传项的方法
     @classmethod
@@ -27,8 +26,7 @@ class ApiError:
             "error_msg": "缺少必传参数",
             "data": {}
         }
-        response = json.dumps(response_json)
-        return response
+        return response_json
 
     # 服务处理异常
     @classmethod
@@ -39,8 +37,7 @@ class ApiError:
                 "error_msg": "服务处理异常",
                 "data": {}
             }
-        response = json.dumps(response_json)
-        return response
+        return response_json
 
     # 参数传值非法的方法
     @classmethod
@@ -51,5 +48,4 @@ class ApiError:
             "error_msg": "参数传值非法",
             "data": {}
         }
-        response = json.dumps(response_json)
-        return response
+        return response_json
