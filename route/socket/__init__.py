@@ -65,22 +65,22 @@ error_msgs = {
 """
 
 
-def check_token(mail, token):
+def check_token(userId, token):
     # 去缓存的token中查询Mail，不存在的话即为从来没登陆过
     # redis查询无错误信息，不作try处理
-    api_logger.debug("准备查询" + mail + "的缓存token数据")
-    tdata = model_redis_usertoken.query(mail)
+    api_logger.debug("准备查询缓存token数据")
+    tdata = model_redis_usertoken.query(userId)
     if tdata is None:
-        api_logger.debug(mail + "的缓存token数据为空")
+        api_logger.debug("缓存token数据为空")
         return False
     else:
-        api_logger.debug(mail + "的缓存token数据存在")
+        api_logger.debug("缓存token数据存在")
         # 格式化缓存基础信息内容
         try:
             t = json.loads(tdata.decode("utf8"))
-            api_logger.debug(mail + "的缓存token数据json格式化成功")
+            api_logger.debug("缓存token数据json格式化成功")
         except Exception as e:
-            api_logger.error(mail + "的缓存token数据json格式化失败，失败原因：" + repr(e))
+            api_logger.error("缓存token数据json格式化失败，失败原因：" + repr(e))
             return False
         # 判断是否一致且有效
         # 判断是否过期
@@ -107,15 +107,15 @@ def check_token(mail, token):
 """
 
 
-def check_user(mail):
-    api_logger.debug("准备查询" + mail + "的缓存账户数据")
+def check_user(user_id):
+    api_logger.debug("准备查询缓存账户数据")
     # 尝试从mysql中查询
     try:
-        api_logger.debug("准备查询" + mail + "的账户数据")
-        uinfo_mysql = model_mysql_userinfo.query.filter_by(userEmail=mail).first()
-        api_logger.debug(mail + "的账户数据查询成功")
+        api_logger.debug("准备查询账户数据")
+        uinfo_mysql = model_mysql_userinfo.query.filter_by(userId=user_id).first()
+        api_logger.debug("账户数据查询成功")
     except Exception as e:
-        api_logger.error(mail + "的账户数据查询失败，失败原因：" + repr(e))
+        api_logger.error("账户数据查询失败，失败原因：" + repr(e))
         return False
     else:
         # 如果mysql中未查询到
