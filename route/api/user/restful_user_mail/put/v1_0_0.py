@@ -11,7 +11,7 @@ from handler.api.check import ApiCheck
 from handler.sys.saveFile import SaveFile
 
 from model.mysql import model_mysql_useroperationrecord, model_mysql_userinfo
-from model.redis import model_redis_userinfo, model_redis_usertoken
+from model.redis import model_redis_usertoken
 
 
 # 账户重置密码-api路由
@@ -148,15 +148,6 @@ def user_mail_put():
         pass
     else:
         return ApiError.requestfail_error("新邮箱地址错误")
-
-    # 7.清空旧邮箱在redis中的账户基本信息
-    try:
-        model_redis_userinfo.delete(requestvalue_mail)
-        model_redis_usertoken.delete(requestvalue_mail)
-    except Exception as e:
-        logmsg = "redis中账户缓存数据删除失败，失败原因：" + repr(e)
-        api_logger.error(logmsg)
-        return ApiError.requestfail_server(logmsg)
 
     # 8.修改所旧邮箱为新邮箱，然后清空新邮箱记录
     uinfo_mysql.userEmail = requestvalue_newmail
