@@ -43,7 +43,8 @@ class ApiTestPlanWorkTableR:
     # 支持根据planId以及传入的内容存储
     def set_time(self, plan_id):
         try:
-            redispool.hset("%s:%s" % (self.key, plan_id), "time", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            redispool.hset("%s:%s" % (
+                self.key, plan_id), "time", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
             db_logger.debug("内容设定成功")
             return True
         except Exception as e:

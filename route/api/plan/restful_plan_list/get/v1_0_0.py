@@ -49,28 +49,13 @@ def plan_list_get():
 
     operate_user_id = None
     # 取出请求头内必要信息
-    operator_mail_address = flask.request.headers['Mail']
+    operate_user_id = flask.request.headers['UserId']
     # 取出入参
     user_id = int(flask.request.args['userId'])
     sort_type = int(flask.request.args['sortType'])
     number_per_page = int(flask.request.args['numPerPage'])
     page_number = int(flask.request.args['pageNumber'])
     key_word = flask.request.args['keyword']
-
-    # 查询mysql中账户信息，并取出账户id
-    try:
-        mysql_userinfo = model_mysql_userinfo.query.filter(
-            model_mysql_userinfo.userEmail == operator_mail_address
-        ).first()
-        api_logger.debug("账户基础信息读取成功")
-    except Exception as e:
-        api_logger.error("账户基础信息读取失败，失败原因：" + repr(e))
-        return route.error_msgs[500]['msg_db_error']
-    else:
-        if mysql_userinfo is None:
-            return route.error_msgs[201]['msg_no_user']
-        else:
-            operate_user_id = mysql_userinfo.userId
 
     """
         预备测试计划开放级别
