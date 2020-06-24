@@ -27,13 +27,10 @@ from operator import itemgetter
 from route.socket import check_parameter, check_token, check_user, check_auth
 from handler.pool import mongodb_tasklog_pool
 from route.socket.report import ws_report
-from handler.pool import mysqlpool
 from handler.log import api_logger
 
 from model.mysql import model_mysql_taskinfo
-from model.mysql import model_mysql_planinfo
 from model.mysql import model_mysql_taskassign
-from model.redis import modle_redis_tasklog
 
 
 @ws_report.route('timeConsumingAnalysis.socket')

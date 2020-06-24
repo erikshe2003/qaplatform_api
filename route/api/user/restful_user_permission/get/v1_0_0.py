@@ -18,9 +18,6 @@ from handler.api.check import ApiCheck
 # 5.若redis中无，则去mysql中查询，然后写入redis
 @route.check_token
 @route.check_user
-@route.check_get_parameter(
-    ['user_id', int, 1, None]
-)
 def user_permission_get():
     # 初始化返回内容
     response_json = {
@@ -30,7 +27,7 @@ def user_permission_get():
     }
 
     # 取出传入参数值
-    requestvalue_id = int(flask.request.args["user_id"])
+    requestvalue_id = int(flask.request.headers["UserId"])
 
     # 查询
     userdata = ApiCheck.check_user(user_id=requestvalue_id)

@@ -16,7 +16,6 @@ from handler.log import api_logger
 from model.mysql import model_mysql_taskinfo
 from model.mysql import model_mysql_planinfo
 from model.mysql import model_mysql_taskassign
-from model.redis import modle_redis_tasklog
 
 """
     统计时间段内每个请求的吞吐量-socket接口
@@ -183,9 +182,10 @@ def get_throughput(taskid, time, qps):
     # 读取taskid对应的执行日志
     # 遍历执行日志，转换日志数据类型为字典，读取需要用到的字段，插入新日志列表
     # 新日志列表按照开始执行时间顺序排序，同时间的按照步骤id顺序排序
-    tasklog = modle_redis_tasklog.query(taskid)
-    if not tasklog:
-        return True, json.dumps(response_json)
+    tasklog = []
+    # tasklog = modle_redis_tasklog.query(taskid)
+    # if not tasklog:
+    #     return True, json.dumps(response_json)
 
     new_tasklog_list = []
     for log in tasklog:

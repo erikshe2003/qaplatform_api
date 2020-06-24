@@ -8,7 +8,6 @@ from sqlalchemy import func
 from handler.log import api_logger
 from handler.pool import mysqlpool
 
-from model.redis import model_redis_userinfo
 from model.redis import model_redis_rolepermission
 from model.redis import model_redis_apiauth
 from model.redis import model_redis_usertoken
@@ -22,38 +21,6 @@ from model.mysql import model_mysql_apiinfo
 
 
 class ApiCheck:
-    # 根据传入的login_name判断账户信息在redis以及mysql中是否存在
-    # 如果在redis中查询成功，则返回账户信息
-    # 如果在redis中未查询到，则查询mysql，将结果写入redis后返回账户信息
-    # 如果在mysql中未查询到，则返回无账户信息
-    # 返回信息，第一位为有效位：
-    # 1.账户存在
-    # return {
-    #     "exist": True,
-    #     "userId": userId,
-    #     "userEmail": userEmail,
-    #     "userPassword": userPassword,
-    #     "userStatus": userStatus,
-    #     "userRoleId": userRoleId
-    # }
-    # 2.账户不存在
-    # return {
-    #     "exist": False,
-    #     "userId": None,
-    #     "userEmail": None,
-    #     "userPassword": None,
-    #     "userStatus": None,
-    #     "userRoleId": None
-    # }
-    # 3.数据处理异常
-    # return {
-    #     "exist": None,
-    #     "userId": None,
-    #     "userEmail": None,
-    #     "userPassword": None,
-    #     "userStatus": None,
-    #     "userRoleId": None
-    # }
     @classmethod
     def check_user(cls, user_id):
         data = {
@@ -67,100 +34,31 @@ class ApiCheck:
             "userRoleId": None
         }
         # 校验账户状态
-        # 从缓存中查询账户基础信息
+        # 尝试从mysql中查询
         try:
-            uinfo_redis = model_redis_userinfo.query(user_id=user_id)
+            uinfo_mysql = model_mysql_userinfo.query.filter_by(userId=user_id).first()
         except Exception as e:
-            logmsg = "缓存中账户信息读取失败，失败原因：" + repr(e)
+            logmsg = "数据库中账户信息读取失败，失败原因：" + repr(e)
             api_logger.error(logmsg)
+            for d in data:
+                data[d] = None
             return data
-        # 如果缓存中查询到了
-        if uinfo_redis is not None:
-            # 格式化缓存基础信息内容
-            try:
-                uinfo = json.loads(uinfo_redis.decode("utf8"))
-                logmsg = "缓存中账户信息json格式化成功"
-                api_logger.debug(logmsg)
-                data["exist"] = True
-                data["userId"] = uinfo["userId"]
-                data["userLoginName"] = uinfo["userLoginName"]
-                data["userNickName"] = uinfo["userNickName"]
-                data["userEmail"] = uinfo["userEmail"]
-                data["userPassword"] = uinfo["userPassword"]
-                data["userStatus"] = uinfo["userStatus"]
-                data["userRoleId"] = uinfo["userRoleId"]
-                # 返回账户信息
-                return data
-            except Exception as e:
-                logmsg = "缓存中账户信息json格式化失败，失败原因：" + repr(e)
-                api_logger.error(logmsg)
-                for d in data:
-                    data[d] = None
-                return data
-        # 如果缓存中未查询到
+        # 如果mysql中未查询到
+        if uinfo_mysql is None:
+            # 返回
+            data["exist"] = False
+            return data
+        # 如果mysql中查询到了
         else:
-            # 尝试从mysql中查询
-            try:
-                uinfo_mysql = model_mysql_userinfo.query.filter_by(userId=user_id).first()
-            except Exception as e:
-                logmsg = "数据库中账户信息读取失败，失败原因：" + repr(e)
-                api_logger.error(logmsg)
-                for d in data:
-                    data[d] = None
-                return data
-            # 如果mysql中未查询到
-            if uinfo_mysql is None:
-                # 返回
-                data["exist"] = False
-                return data
-            # 如果mysql中查询到了
-            else:
-                # 将需缓存的内容缓存至redis的userInfo
-                # 需缓存内容:
-                # key=userEmail
-                # value="\"userId\": int,
-                #   \"userNickName\":str,
-                #   \"userPassword\":str,
-                #   \"userStatus\":int,
-                #   \"userRoleId\":int"
-                try:
-                    model_redis_userinfo.set(
-                        user_id,
-                        "{\"userId\":" + str(uinfo_mysql.userId) +
-                        ",\"userEmail\":" + (
-                            "\"" + str(
-                                uinfo_mysql.userEmail) + "\"" if uinfo_mysql.userEmail is not None else "null"
-                        ) +
-                        ",\"userLoginName\":" + (
-                            "\"" + str(uinfo_mysql.userLoginName) + "\"" if uinfo_mysql.userLoginName is not None else "null"
-                        ) +
-                        ",\"userNickName\":" + (
-                            "\"" + str(uinfo_mysql.userNickName) + "\"" if uinfo_mysql.userNickName is not None else "null"
-                        ) +
-                        ",\"userPassword\":" + (
-                            "\"" + str(uinfo_mysql.userPassword) + "\"" if uinfo_mysql.userPassword is not None else "null"
-                        ) +
-                        ",\"userStatus\":" + str(uinfo_mysql.userStatus) +
-                        ",\"userRoleId\":" + (
-                            str(uinfo_mysql.userRoleId) if uinfo_mysql.userRoleId is not None else "null"
-                        ) + "}"
-                    )
-                    # 返回账户信息
-                    data["exist"] = True
-                    data["userId"] = uinfo_mysql.userId
-                    data["userLoginName"] = uinfo_mysql.userLoginName
-                    data["userNickName"] = uinfo_mysql.userNickName
-                    data["userEmail"] = uinfo_mysql.userEmail
-                    data["userPassword"] = uinfo_mysql.userPassword
-                    data["userStatus"] = uinfo_mysql.userStatus
-                    data["userRoleId"] = uinfo_mysql.userRoleId
-                    return data
-                except Exception as e:
-                    logmsg = "账户信息存入缓存失败，失败原因：" + repr(e)
-                    api_logger.error(logmsg)
-                    for d in data:
-                        data[d] = None
-                    return data
+            data["exist"] = True
+            data["userId"] = uinfo_mysql.userId
+            data["userLoginName"] = uinfo_mysql.userLoginName
+            data["userNickName"] = uinfo_mysql.userNickName
+            data["userEmail"] = uinfo_mysql.userEmail
+            data["userPassword"] = uinfo_mysql.userPassword
+            data["userStatus"] = uinfo_mysql.userStatus
+            data["userRoleId"] = uinfo_mysql.userRoleId
+            return data
 
     # 根据传入的角色标识符判断角色是否存在以及角色的权限配置信息
     # 如果在redis中查询成功，则返回角色权限配置信息

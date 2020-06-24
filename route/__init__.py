@@ -4,6 +4,7 @@ import flask
 import json
 import os
 import datetime
+import uuid
 
 from functools import wraps
 
@@ -11,25 +12,29 @@ from handler.log import api_logger
 from handler.pool import mysqlpool
 
 from model.redis import model_redis_usertoken
-from model.redis import model_redis_userinfo
 from model.redis import model_redis_apiauth
+from model.redis import model_redis_rolepermission
 
 from model.mysql import model_mysql_userinfo
 from model.mysql import model_mysql_rolepermission
 from model.mysql import model_mysql_apiinfo
+from model.mysql import model_mysql_functioninfo
 from model.mysql import model_mysql_functionorg
 
 
 # 201请求错误/301传参非法/500系统异常
 error_msgs = {
     201: {
+        'action_code_non': {"error_code": 201, "error_msg": "操作码不存在", "data": {}},
+        'action_code_expire': {"error_code": 201, "error_msg": "操作码已过期", "data": {}},
+        'action_code_error': {"error_code": 201, "error_msg": "操作码异常", "data": {}},
         'msg_before_login': {"error_code": 201, "error_msg": "请先登录账号", "data": {}},
-        'msg_be_forbidden': {"error_code": 201, "error_msg": "账户已禁用", "data": {}},
         'msg_data_error': {"error_code": 201, "error_msg": "数据非法", "data": {}},
+        'msg_illegal_format': {"error_code": 201, "error_msg": "数据格式非法", "data": {}},
+        'msg_mail_exist': {"error_code": 201, "error_msg": "邮箱已被注册", "data": {}},
         'msg_new_password_inconformity': {"error_code": 201, "error_msg": "两次密码不一致", "data": {}},
         'msg_need_register': {"error_code": 201, "error_msg": "账户未激活", "data": {}},
         'msg_no_user': {"error_code": 201, "error_msg": "账户不存在", "data": {}},
-        'msg_mail_exist': {"error_code": 201, "error_msg": "邮箱已被注册", "data": {}},
         'msg_no_role': {"error_code": 201, "error_msg": "角色不存在", "data": {}},
         'msg_no_plan': {"error_code": 201, "error_msg": "测试计划不存在", "data": {}},
         'msg_no_test_task': {"error_code": 201, "error_msg": "无测试任务", "data": {}},
@@ -51,11 +56,12 @@ error_msgs = {
         'msg_role_is_admin': {"error_code": 201, "error_msg": "管理员角色禁止操作", "data": {}},
         'msg_status_error': {"error_code": 201, "error_msg": "账户状态异常", "data": {}},
         'msg_too_early': {"error_code": 201, "error_msg": "测试任务开始时间不能小于当前时间", "data": {}},
-        'msg_token_wrong': {"error_code": 201, "error_msg": "Token校验失败", "data": {}},
-        'msg_token_expired': {"error_code": 201, "error_msg": "Token过期", "data": {}},
         'msg_tasktype_error': {"error_code": 201, "error_msg": "调试任务不支持查看此报告", "data": {}},
         'msg_task_time_error': {"error_code": 201, "error_msg": "测试任务结束时间不能小于开始时间且相隔不能小于10s", "data": {}},
         'msg_user_is_admin': {"error_code": 201, "error_msg": "管理员账号禁止操作", "data": {}},
+        'msg_user_id_wrong': {"error_code": 201, "error_msg": "账号数据错误", "data": {}},
+        'msg_user_forbidden': {"error_code": 201, "error_msg": "账号已禁用", "data": {}},
+        'msg_user_exist': {"error_code": 201, "error_msg": "登录名已被注册", "data": {}},
         'msg_user_cannot_operate': {"error_code": 201, "error_msg": "用户账号禁止操作", "data": {}},
         'msg_worker_not_exist': {"error_code": 201, "error_msg": "worker不存在", "data": {}}
     },
@@ -68,6 +74,10 @@ error_msgs = {
     302: {
         'msg_request_params_incomplete': {"error_code": 302, "error_msg": "缺少必传参数", "data": {}}
     },
+    401: {
+        'msg_token_wrong': {"error_code": 401, "error_msg": "Token校验失败", "data": {}},
+        'msg_token_expired': {"error_code": 401, "error_msg": "Token过期", "data": {}}
+    },
     500: {
         'msg_server_error': {"error_code": 500, "error_msg": "服务异常", "data": {}},
         'msg_db_error': {"error_code": 500, "error_msg": "数据查询失败", "data": {}},
@@ -79,6 +89,169 @@ error_msgs = {
         'msg_deploy_failed': {"error_code": 500, "error_msg": "测试任务下发失败，请尽快联系管理员", "data": {}}
     }
 }
+
+
+# 刷新redis缓存
+# apiAuth
+def refresh_redis_apiauth(role_id):
+    # 将缓存中的旧数据替换为新数据
+    try:
+        role_api_auth_data = mysqlpool.session.query(
+            model_mysql_rolepermission,
+            model_mysql_apiinfo.apiUrl,
+            model_mysql_rolepermission.hasPermission
+        ).join(
+            model_mysql_functionorg,
+            model_mysql_functionorg.functionId == model_mysql_rolepermission.functionId
+        ).join(
+            model_mysql_apiinfo,
+            model_mysql_apiinfo.apiId == model_mysql_functionorg.apiId
+        ).filter(
+            model_mysql_rolepermission.roleId == role_id
+        ).all()
+        logmsg = "数据库中角色权限信息修改后页面权限配置信息读取成功"
+        api_logger.debug(logmsg)
+    except Exception as e:
+        logmsg = "数据库中角色权限信息修改后页面权限配置信息读取失败，失败原因：" + repr(e)
+        api_logger.error(logmsg)
+    else:
+        """
+            拼接待缓存的权限数据
+            格式：
+            auth = {
+                roleId: {
+                    "/api/management/role/getRoleList.json": 1,
+                    "/api/management/role/searchRole.json": 0
+                }
+            }
+        """
+        auth = {}
+        for auth_data in role_api_auth_data:
+            auth[auth_data.apiUrl] = auth_data.hasPermission
+
+        # 然后将需缓存的内容缓存至redis的apiAuth
+        # 需缓存内容:
+        # key=roleId
+        # value=auth
+        try:
+            model_redis_apiauth.set(
+                role_id,
+                json.dumps(auth)
+            )
+        except Exception as e:
+            logmsg = "缓存库中角色权限信息写入失败，失败原因：" + repr(e)
+            api_logger.error(logmsg)
+
+
+# rolePermission
+def refresh_redis_rolepermission(role_id):
+    # 尝试去mysql中查询最新的角色权限配置数据
+    try:
+        role_page_permission_data = mysqlpool.session.query(
+            model_mysql_rolepermission,
+            model_mysql_rolepermission.functionId,
+            model_mysql_functioninfo.functionAlias
+        ).join(
+            model_mysql_functioninfo,
+            model_mysql_rolepermission.functionId == model_mysql_functioninfo.functionId
+        ).filter(
+            model_mysql_rolepermission.roleId == role_id,
+            model_mysql_functioninfo.functionType == 1,
+            model_mysql_rolepermission.hasPermission == 1
+        ).all()
+        logmsg = "数据库中角色权限信息修改后页面权限配置信息读取成功"
+        api_logger.debug(logmsg)
+    except Exception as e:
+        logmsg = "数据库中角色权限信息修改后页面权限配置信息读取失败，失败原因：" + repr(e)
+        api_logger.error(logmsg)
+    else:
+        """拼接待缓存的权限数据
+            格式：
+            permission = {
+                "1": {
+                    "id": 1,
+                    "alias": "AAA",
+                    "component": {
+                        "2": {
+                            "id": 2,
+                            "alias": "BBB"
+                        },
+                        "4": {
+                            "id": 4,
+                            "alias": "DDD"
+                        }
+                    }
+                }
+            }
+        """
+        permission = {}
+        for page_permission in role_page_permission_data:
+            permission[str(page_permission.functionId)] = {
+                "id": page_permission.functionId,
+                "alias": page_permission.functionAlias,
+                "component": {}
+            }
+            try:
+                role_component_permission_data = mysqlpool.session.query(
+                    model_mysql_rolepermission,
+                    model_mysql_rolepermission.functionId,
+                    model_mysql_functioninfo.functionAlias
+                ).join(
+                    model_mysql_functioninfo,
+                    model_mysql_rolepermission.functionId == model_mysql_functioninfo.functionId
+                ).filter(
+                    model_mysql_rolepermission.roleId == role_id,
+                    model_mysql_functioninfo.rootId == page_permission.functionId,
+                    model_mysql_functioninfo.functionType == 2,
+                    model_mysql_rolepermission.hasPermission == 1
+                ).all()
+                logmsg = "数据库中角色权限信息修改后功能权限配置信息读取成功"
+                api_logger.debug(logmsg)
+            except Exception as e:
+                logmsg = "数据库中角色权限信息修改后功能权限配置信息读取失败，失败原因：" + repr(e)
+                api_logger.error(logmsg)
+            else:
+                for component_permission in role_component_permission_data:
+                    permission[str(page_permission.functionId)]["component"][str(component_permission.functionId)] = {
+                        "id": component_permission.functionId,
+                        "alias": component_permission.functionAlias
+                    }
+        # 然后将需缓存的内容缓存至redis的rolePermission
+        # 需缓存内容:
+        # key=roleId
+        # value=permission
+        try:
+            model_redis_rolepermission.set(
+                role_id,
+                json.dumps(permission)
+            )
+        except Exception as e:
+            logmsg = "缓存库中角色权限信息写入失败，失败原因：" + repr(e)
+            api_logger.error(logmsg)
+
+
+# userToken
+def refresh_redis_usertoken(user_id, remember):
+    user_token = str(
+        uuid.uuid3(
+            uuid.NAMESPACE_DNS, str(user_id) + str(
+                datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            )
+        )
+    )
+
+    if remember is True:
+        t = (datetime.datetime.now() + datetime.timedelta(days=30)).strftime('%Y-%m-%d %H:%M:%S')
+    else:
+        t = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')
+    model_redis_usertoken.set(
+        user_id,
+        "{\"userToken\":\"" + user_token + "\"," +
+        "\"validTime\":\"" + t +
+        "\"}"
+    )
+
+    return user_token
 
 
 """
@@ -101,29 +274,31 @@ def check_token(func):
         # 首先检查必传参数Mail/Token
         if 'UserId' not in flask.request.headers or 'Token' not in flask.request.headers:
             return error_msgs[302]['msg_request_params_incomplete']
+        user_id = flask.request.headers['UserId']
+        user_token = flask.request.headers['Token']
         # 然后检查token是否正确
         # 去缓存的token中查询Mail，不存在的话即为从来没登陆过
         # redis查询无错误信息，不作try处理
-        api_logger.debug("准备查询" + flask.request.headers['UserId'] + "的缓存token数据")
-        tdata = model_redis_usertoken.query(flask.request.headers['UserId'])
+        api_logger.debug("准备查询缓存token数据")
+        tdata = model_redis_usertoken.query(user_id)
         if tdata is None:
-            api_logger.debug(flask.request.headers['UserId'] + "的缓存token数据为空")
+            api_logger.debug("缓存token数据为空")
             return error_msgs[201]['msg_before_login']
         else:
-            api_logger.debug(flask.request.headers['UserId'] + "的缓存token数据存在")
+            api_logger.debug("缓存token数据存在")
             # 格式化缓存基础信息内容
             try:
                 t = json.loads(tdata.decode("utf8"))
-                api_logger.debug(flask.request.headers['UserId'] + "的缓存token数据json格式化成功")
+                api_logger.debug("缓存token数据json格式化成功")
             except Exception as e:
-                api_logger.error(flask.request.headers['UserId'] + "的缓存token数据json格式化失败，失败原因：" + repr(e))
+                api_logger.error("缓存token数据json格式化失败，失败原因：" + repr(e))
                 return error_msgs[500]['msg_json_format_fail']
             # 判断是否一致且有效
             # 判断是否过期
-            if flask.request.headers['Token'] != t["userToken"]:
-                return error_msgs[201]['msg_token_wrong']
+            if user_token != t["userToken"]:
+                return error_msgs[401]['msg_token_wrong']
             elif datetime.datetime.strptime(t["validTime"], "%Y-%m-%d %H:%M:%S") < datetime.datetime.now():
-                return error_msgs[201]['msg_token_expired']
+                return error_msgs[401]['msg_token_expired']
         # 检查通过，执行应用逻辑
         return func(*args, **kwargs)
     return wrapper
@@ -151,83 +326,27 @@ def check_user(func):
         if 'UserId' not in flask.request.headers:
             return error_msgs[302]['msg_request_params_incomplete']
         user_id = flask.request.headers['UserId']
-        api_logger.debug("准备查询缓存账户数据")
-        uinfo_redis = model_redis_userinfo.query(user_id=user_id)
-        # 如果缓存中查询到了
-        if uinfo_redis is not None:
-            api_logger.debug("缓存账户数据存在")
-            # 格式化缓存基础信息内容
-            try:
-                uinfo = json.loads(uinfo_redis.decode("utf8"))
-                api_logger.debug("缓存账户数据json格式化成功")
-            except Exception as e:
-                api_logger.error("缓存账户数据json格式化失败，失败原因：" + repr(e))
-                return error_msgs[500]['msg_json_format_fail']
+        # 尝试从mysql中查询
+        try:
+            api_logger.debug("准备查询账户数据")
+            uinfo_mysql = model_mysql_userinfo.query.filter_by(userId=user_id).first()
+            api_logger.debug("账户数据查询成功")
+        except Exception as e:
+            api_logger.error("账户数据查询失败，失败原因：" + repr(e))
+            return error_msgs[500]['msg_db_error']
+        else:
+            # 如果mysql中未查询到
+            if uinfo_mysql is None:
+                return error_msgs[201]['msg_no_user']
+            # 如果mysql中查询到了
             else:
                 # 判断账户状态
-                if uinfo["userStatus"] == 0:
+                if uinfo_mysql.userStatus == 0:
                     return error_msgs[201]['msg_need_register']
-                elif uinfo["userStatus"] == -1:
-                    return error_msgs[201]['msg_be_forbidden']
-                elif uinfo["userStatus"] != 1:
+                elif uinfo_mysql.userStatus == -1:
+                    return error_msgs[201]['msg_user_forbidden']
+                elif uinfo_mysql.userStatus != 1:
                     return error_msgs[201]['msg_status_error']
-        # 如果缓存中未查询到
-        else:
-            api_logger.debug("缓存账户数据为空")
-            # 尝试从mysql中查询
-            try:
-                api_logger.debug("准备查询账户数据")
-                uinfo_mysql = model_mysql_userinfo.query.filter_by(userId=user_id).first()
-                api_logger.debug("账户数据查询成功")
-            except Exception as e:
-                api_logger.error("账户数据查询失败，失败原因：" + repr(e))
-                return error_msgs[500]['msg_db_error']
-            else:
-                # 如果mysql中未查询到
-                if uinfo_mysql is None:
-                    return error_msgs[201]['msg_no_user']
-                # 如果mysql中查询到了
-                else:
-                    # 将需缓存的内容缓存至redis的userInfo
-                    # 需缓存内容:
-                    # key=userEmail
-                    # value="\"userId\": int,
-                    #   \"userNickName\":str,
-                    #   \"userPassword\":str,
-                    #   \"userStatus\":int,
-                    #   \"userRoleId\":int"
-                    api_logger.debug("准备记录账户缓存数据")
-                    model_redis_userinfo.set(
-                        user_id,
-                        "{\"userId\":" + str(uinfo_mysql.userId) +
-                        ",\"userLoginName\":" + (
-                            "\"" + str(uinfo_mysql.userLoginName) +
-                            "\"" if uinfo_mysql.userLoginName is not None else "null"
-                        ) +
-                        ",\"userNickName\":" + (
-                            "\"" + str(uinfo_mysql.userNickName) +
-                            "\"" if uinfo_mysql.userNickName is not None else "null"
-                        ) +
-                        ",\"userPassword\":" + (
-                            "\"" + str(uinfo_mysql.userPassword) +
-                            "\"" if uinfo_mysql.userPassword is not None else "null"
-                        ) +
-                        ",\"userEmail\":" + (
-                            "\"" + str(uinfo_mysql.userEmail) +
-                            "\"" if uinfo_mysql.userEmail is not None else "null"
-                        ) +
-                        ",\"userStatus\":" + str(uinfo_mysql.userStatus) +
-                        ",\"userRoleId\":" + (
-                            str(uinfo_mysql.userRoleId) if uinfo_mysql.userRoleId is not None else "null"
-                        ) + "}"
-                    )
-                    # 判断账户状态
-                    if uinfo_mysql.userStatus == 0:
-                        return error_msgs[201]['msg_need_register']
-                    elif uinfo_mysql.userStatus == -1:
-                        return error_msgs[201]['msg_be_forbidden']
-                    elif uinfo_mysql.userStatus != 1:
-                        return error_msgs[201]['msg_status_error']
         # 检查通过，执行应用逻辑
         return func(*args, **kwargs)
     return wrapper
@@ -252,103 +371,100 @@ def check_user(func):
 def check_auth(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        mail_address = flask.request.headers['Mail']
+        # 首先检查必传参数Mail/Token
+        if 'UserId' not in flask.request.headers:
+            return error_msgs[302]['msg_request_params_incomplete']
+        user_id = flask.request.headers['UserId']
         api_url = flask.request.url
         # 取出账户所属roleId
-        # 首先查询缓存中账户信息，尝试取出roleId
-        api_logger.debug("准备查询" + mail_address + "的缓存账户数据")
-        redis_userinfo = model_redis_userinfo.query(mail_address)
-        # 如果缓存中查询到了
-        if redis_userinfo is not None:
-            api_logger.debug(mail_address + "的缓存账户数据存在")
-            # 格式化缓存基础信息内容
-            try:
-                redis_userinfo_json = json.loads(redis_userinfo.decode("utf8"))
-                api_logger.debug(mail_address + "的缓存账户数据json格式化成功")
-            except Exception as e:
-                api_logger.error(mail_address + "的缓存账户数据json格式化失败，失败原因：" + repr(e))
-                return error_msgs[500]['msg_db_error']
-            else:
-                # 取出roleId
-                role_id = redis_userinfo_json['userRoleId']
-                # 如果role_id不为空
-                if role_id is not None:
-                    # 根据roleId检查账户所属是否有api访问权限
-                    api_logger.debug("准备查询" + mail_address + "所属角色的缓存api访问权限数据")
-                    redis_apiauth = model_redis_apiauth.query(role_id)
-                    if redis_apiauth is not None:
-                        # 格式化缓存api访问权限信息内容
-                        try:
-                            redis_apiauth_json = json.loads(redis_apiauth.decode("utf8"))
-                            api_logger.debug(mail_address + "的缓存api访问权限数据json格式化成功")
-                        except Exception as e:
-                            api_logger.error(mail_address + "的缓存api访问权限数据json格式化失败，失败原因：" + repr(e))
-                            return error_msgs[500]['msg_db_error']
-                        else:
-                            if api_url.split('/')[-1] in redis_apiauth_json and redis_apiauth_json[api_url.split(
-                                    '/')[-1]] != 1:
-                                return error_msgs[201]['msg_no_auth']
-                    # 如果redis中未查询到
-                    else:
-                        # 尝试去mysql中查询最新的角色权限配置数据
-                        try:
-                            api_logger.debug("准备查询" + mail_address + "所属角色的api访问权限数据")
-                            mysql_role_api_auth = mysqlpool.session.query(
-                                model_mysql_rolepermission,
-                                model_mysql_apiinfo.apiUrl,
-                                model_mysql_rolepermission.hasPermission
-                            ).join(
-                                model_mysql_functionorg,
-                                model_mysql_functionorg.functionId == model_mysql_rolepermission.functionId
-                            ).join(
-                                model_mysql_apiinfo,
-                                model_mysql_apiinfo.apiId == model_mysql_functionorg.apiId
-                            ).filter(
-                                model_mysql_rolepermission.roleId == role_id
-                            ).all()
-                            api_logger.debug("数据库中角色权限配置信息读取成功")
-                        except Exception as e:
-                            api_logger.error("数据库中角色权限配置信息读取失败，失败原因：" + repr(e))
-
-                        else:
-                            # 如果mysql中未查询到
-                            if not mysql_role_api_auth:
-                                return error_msgs[201]['msg_no_role_auth_data']
-                            # 如果mysql中查询到了
-                            else:
-                                """
-                                    拼接待缓存的权限数据
-                                    格式：
-                                    auth = {
-                                        roleId: {
-                                            "/api/management/role/getRoleList.json": 1,
-                                            "/api/management/role/searchRole.json": 0
-                                        }
-                                    }
-                                """
-                                auth = {}
-                                for auth_data in mysql_role_api_auth:
-                                    auth[auth_data.apiUrl] = auth_data.hasPermission
-                                """
-                                    然后将需缓存的内容缓存至redis的apiAuth
-                                    需缓存内容:
-                                    key=roleId
-                                    value=auth
-                                """
-                                model_redis_apiauth.set(role_id, json.dumps(auth))
-                                """
-                                    判断url是否存在
-                                    如果存在，且不为1，则报错
-                                """
-                                if api_url in auth and auth[api_url] != 1:
-                                    return error_msgs[201]['msg_no_auth']
-                # 如果role_id为空
-                else:
-                    # 无角色，直接返回无权限
-                    return error_msgs[201]['msg_no_auth']
+        # 首先查询账户信息，尝试取出roleId
+        api_logger.debug("准备查询账户数据")
+        try:
+            api_logger.debug("准备查询账户数据")
+            uinfo_mysql = model_mysql_userinfo.query.filter_by(userId=user_id).first()
+            api_logger.debug("账户数据查询成功")
+        except Exception as e:
+            api_logger.error("账户数据查询失败，失败原因：" + repr(e))
+            return error_msgs[500]['msg_db_error']
         else:
-            # 无账号信息，直接返回无权限
-            return error_msgs[201]['msg_no_auth']
+            # 如果mysql中查询到了
+            if uinfo_mysql is not None:
+                # 尝试去redis中查询缓存的auth数据
+                # 根据roleId检查账户所属是否有api访问权限
+                api_logger.debug("准备查询所属角色的缓存api访问权限数据")
+                redis_apiauth = model_redis_apiauth.query(uinfo_mysql.userRoleId)
+                if redis_apiauth is not None:
+                    # 格式化缓存api访问权限信息内容
+                    try:
+                        redis_apiauth_json = json.loads(redis_apiauth.decode("utf8"))
+                        api_logger.debug("缓存api访问权限数据json格式化成功")
+                    except Exception as e:
+                        api_logger.error("缓存api访问权限数据json格式化失败，失败原因：" + repr(e))
+                        return error_msgs[500]['msg_db_error']
+                    else:
+                        if api_url.split('/')[-1] in redis_apiauth_json and redis_apiauth_json[api_url.split(
+                                '/')[-1]] != 1:
+                            return error_msgs[201]['msg_no_auth']
+                # 如果redis中未查询到
+                else:
+                    # 尝试去mysql中查询最新的角色权限配置数据
+                    try:
+                        api_logger.debug("准备查询所属角色的api访问权限数据")
+                        mysql_role_api_auth = mysqlpool.session.query(
+                            model_mysql_rolepermission,
+                            model_mysql_apiinfo.apiUrl,
+                            model_mysql_rolepermission.hasPermission
+                        ).join(
+                            model_mysql_functionorg,
+                            model_mysql_functionorg.functionId == model_mysql_rolepermission.functionId
+                        ).join(
+                            model_mysql_apiinfo,
+                            model_mysql_apiinfo.apiId == model_mysql_functionorg.apiId
+                        ).filter(
+                            model_mysql_rolepermission.roleId == uinfo_mysql.userRoleId
+                        ).all()
+                        api_logger.debug("数据库中角色权限配置信息读取成功")
+                    except Exception as e:
+                        api_logger.error("数据库中角色权限配置信息读取失败，失败原因：" + repr(e))
+                    else:
+                        # 如果mysql中未查询到
+                        if not mysql_role_api_auth:
+                            return error_msgs[201]['msg_no_role_auth_data']
+                        # 如果mysql中查询到了
+                        else:
+                            """
+                                拼接待缓存的权限数据
+                                格式：
+                                auth = {
+                                    roleId: {
+                                        "/api/management/role/getRoleList.json": 1,
+                                        "/api/management/role/searchRole.json": 0
+                                    }
+                                }
+                            """
+                            auth = {}
+                            for auth_data in mysql_role_api_auth:
+                                auth[auth_data.apiUrl] = auth_data.hasPermission
+                            """
+                                然后将需缓存的内容缓存至redis的apiAuth
+                                需缓存内容:
+                                key=roleId
+                                value=auth
+                            """
+                            model_redis_apiauth.set(uinfo_mysql.userRoleId, json.dumps(auth))
+                            """
+                                判断url是否存在
+                                如果存在，且不为1，则报错
+                            """
+                            if api_url in auth and auth[api_url] != 1:
+                                return error_msgs[201]['msg_no_auth']
+            # 如果role_id为空
+            elif uinfo_mysql.userRoleId is None:
+                # 无角色，直接返回无权限
+                return error_msgs[201]['msg_no_auth']
+            else:
+                # 无账号信息，直接返回无权限
+                return error_msgs[201]['msg_no_auth']
         # 检查账户所属角色的权限清单
         return func(*args, **kwargs)
     return wrapper

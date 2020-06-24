@@ -62,6 +62,7 @@ def user_get():
         uinfo_mysql = mysqlpool.session.query(
             model_mysql_userinfo,
             model_mysql_userinfo.userId,
+            model_mysql_userinfo.userLoginName,
             model_mysql_userinfo.userNickName,
             model_mysql_userinfo.userEmail,
             model_mysql_userinfo.userStatus,
@@ -88,20 +89,23 @@ def user_get():
             uinfo_mysql = uinfo_mysql.filter(
                 model_mysql_userinfo.userRoleId == requestvalue_roleid
             )
+    except Exception as e:
+        logmsg = "数据库中账号列表读取失败，失败原因：" + repr(e)
+        api_logger.error(logmsg)
+    else:
+        # 构造total
+        response_json["data"]["total"] = uinfo_mysql.count()
+        # 构造user_list
         uinfo_mysql = uinfo_mysql.limit(
             # (requestvalue_num - 1) * requestvalue_per,
             requestvalue_per
         ).offset(
             (requestvalue_num - 1) * requestvalue_per
         ).all()
-    except Exception as e:
-        logmsg = "数据库中账号列表读取失败，失败原因：" + repr(e)
-        api_logger.error(logmsg)
-    else:
-        # 构造user_list
         for u in uinfo_mysql:
             usome = {
                 "id": u.userId,
+                "login_name": u.userLoginName,
                 "nick_name": u.userNickName,
                 "email": u.userEmail,
                 "status": u.userStatus,
@@ -112,19 +116,6 @@ def user_get():
                 "can_delete": False if u.roleIsAdmin else True
             }
             response_json["data"]["user_list"][u.userId] = usome
-
-    try:
-        total_mysql = mysqlpool.session.query(
-            func.count(model_mysql_userinfo.userId).label(name="userNum")
-        ).first()
-        logmsg = "数据库中账号总数读取成功"
-        api_logger.debug(logmsg)
-    except Exception as e:
-        logmsg = "数据库中账号总数读取失败，失败原因：" + repr(e)
-        api_logger.error(logmsg)
-    else:
-        # 构造total
-        response_json["data"]["total"] = total_mysql.userNum
 
     # 8.返回成功信息
     response_json["error_msg"] = "操作成功"

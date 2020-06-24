@@ -43,7 +43,7 @@ class PublicMailer:
 
     # 发送重置密码邮件
     # 需传入收件人地址/校验码
-    def sendmail_reset_password(self, to, code, operationid):
+    def sendmail_reset_password(self, user_id, to, code, operationid):
         # 检查传参合法性
         # to
         if type(to) is str and type(code) is str:
@@ -85,7 +85,7 @@ class PublicMailer:
                             font-size: 15px;background-color: white;border: 1px solid darkgrey;border-radius: 4px;">
                                 <div style="margin-top: 15px;margin-left: 15px;padding-bottom: 10px;">
                                     您正在尝试重置密码：
-                                    <a href="%s?mail=%s&code=%s&operate=%s">点我打开重置密码页</a>
+                                    <a href="%s?userId=%s&mail=%s&code=%s&operate=%s">点我打开重置密码页</a>
                                     <div style="margin-left: 10px;padding-bottom: 10px;font-size: 16px;"></div>
                                 </div>
                             </div>
@@ -108,6 +108,7 @@ class PublicMailer:
                         appconfig.get("web", "http") + "://" +
                         appconfig.get("web", "host") + ":" +
                         appconfig.get("web", "port") + appconfig.get("web_url", "resetPassword"),
+                        str(user_id),
                         parse.quote(to),
                         parse.quote(code),
                         str(operationid)
@@ -133,7 +134,7 @@ class PublicMailer:
 
     # 发送账号注册申请邮件
     # 需传入收件人地址/校验码
-    def sendmail_register(self, to, code, operationid):
+    def sendmail_register(self, user_id, to, code, operationid):
         # 检查传参合法性
         # to
         if type(to) is str and type(code) is str:
@@ -175,19 +176,14 @@ class PublicMailer:
                             font-size: 15px;background-color: white;border: 1px solid darkgrey;border-radius: 4px;">
                                 <div style="margin-top: 15px;margin-left: 15px;padding-bottom: 10px;">
                                     您正在尝试注册账号：
-                                    <a href="%s?mail=%s&code=%s&operate=%s">点我打开注册账号页</a>
+                                    <a href="%s?userId=%s&mail=%s&code=%s&operate=%s">点我打开注册账号页</a>
                                     <div style="margin-left: 10px;padding-bottom: 10px;font-size: 16px;"></div>
                                 </div>
                             </div>
                             <div style="margin-top: 10px;padding-bottom: 10px;
                             color: darkgrey;text-align: right;">
                                 <div style="margin-right: 20px;font-size: 12px;">
-                                    本条消息发送自极课自动化测试平台
-                                    <svg id="platform_logo" viewBox="0 0 60 60">
-                                        <path id="platform_logo_left" d="M 10 0 L 20 0 L 13 40 L 3 40 Z"></path>
-                                        <path id="platform_logo_center" d="M 26 20 L 36 20 L 32 40 L 22 40 Z"></path>
-                                        <path id="platform_logo_right" d="M 45 20 L 55 20 L 47 60 L 37 60 Z"></path>
-                                    </svg>
+                                    本条消息发送自%s测试平台
                                 </div>
                             </div>
                         </div>
@@ -198,9 +194,11 @@ class PublicMailer:
                 appconfig.get("web", "http") + "://" +
                 appconfig.get("web", "host") + ":" +
                 appconfig.get("web", "port") + appconfig.get("web_url", "infoConfirm"),
+                str(user_id),
                 parse.quote(to),
                 parse.quote(code),
-                str(operationid)
+                str(operationid),
+                appconfig.get('org', 'abbreviation'),
             )
             # 装载消息
             # 添加根MIME
@@ -210,7 +208,10 @@ class PublicMailer:
             # 初始化邮件接收人
             msg['To'] = Header(to, 'utf-8')
             # 初始化邮件主题
-            msg['Subject'] = Header('极课自动化测试平台-账号注册', 'utf-8')
+            msg['Subject'] = Header(
+                '%s测试平台-账号注册' % appconfig.get('org', 'abbreviation'),
+                'utf-8'
+            )
             # 发送
             result_flag, result_type = self.__send(to, msg)
             logmsg = "给" + to + "发送账号注册邮件结束"

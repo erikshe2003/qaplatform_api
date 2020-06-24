@@ -20,7 +20,6 @@ from model.mysql import model_mysql_planinfo
 from model.mysql import model_mysql_tablesnap
 from model.mysql import model_mysql_taskinfo
 from model.mysql import model_mysql_userinfo
-from model.redis import model_redis_userinfo
 from model.redis import modle_redis_apitestplanworktable
 
 """
@@ -104,33 +103,20 @@ def task_post():
             return route.error_msgs[201]['msg_data_error']
         times = flask.request.json['times']
 
-    # 根据mail_address在缓存中查找账户id
-    redis_user_info = model_redis_userinfo.query(user_email=mail_address)
-    # 如果缓存中没查到，则查询mysql
-    if redis_user_info is None:
-        try:
-            mysql_user_info = model_mysql_userinfo.query.filter(
-                model_mysql_userinfo.userEmail == mail_address
-            ).first()
-            api_logger.debug(mail_address + "的账户基础信息读取成功")
-        except Exception as e:
-            api_logger.error(mail_address + "的账户基础信息读取失败，失败原因：" + repr(e))
-            return route.error_msgs[500]['msg_db_error']
-        else:
-            if mysql_user_info is None:
-                return route.error_msgs[201]['msg_no_user']
-            else:
-                user_id = mysql_user_info.userId
+    # 查找账户id
+    try:
+        mysql_user_info = model_mysql_userinfo.query.filter(
+            model_mysql_userinfo.userEmail == mail_address
+        ).first()
+        api_logger.debug(mail_address + "的账户基础信息读取成功")
+    except Exception as e:
+        api_logger.error(mail_address + "的账户基础信息读取失败，失败原因：" + repr(e))
+        return route.error_msgs[500]['msg_db_error']
     else:
-        # 格式化缓存中基础信息内容
-        try:
-            redis_user_info_json = json.loads(redis_user_info.decode("utf8"))
-            api_logger.debug(mail_address + "的缓存账户数据json格式化成功")
-        except Exception as e:
-            api_logger.error(mail_address + "的缓存账户数据json格式化失败，失败原因：" + repr(e))
-            return route.error_msgs[500]['msg_json_format_fail']
+        if mysql_user_info is None:
+            return route.error_msgs[201]['msg_no_user']
         else:
-            user_id = redis_user_info_json['userId']
+            user_id = mysql_user_info.userId
 
     # 为了将来能够看日志，必须要有不变的快照数据，所以tableSnap的不靠谱
     # 尝试于redis读取工作台快照临时数据

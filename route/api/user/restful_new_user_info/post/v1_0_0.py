@@ -4,6 +4,9 @@ import flask
 import re
 import datetime
 import uuid
+import route
+
+from sqlalchemy import or_
 
 from handler.mail import publicmailer
 from handler.pool import mysqlpool
@@ -14,7 +17,6 @@ from handler.log import api_logger
 
 from model.mysql import model_mysql_useroperationrecord
 from model.mysql import model_mysql_userinfo
-from model.redis import model_redis_userinfo
 
 
 # 申请新增账户-api路由
@@ -26,6 +28,9 @@ from model.redis import model_redis_userinfo
 # 4.如果账户存在但状态为未激活，则将先前的账户操作记录数据置为无效，然后插入新的未完成的操作记录
 # 5.尝试发送包含账户信息确认页url的邮件
 # 6.返回信息给前端
+@route.check_post_parameter(
+    ['mail_address', str, 1, None]
+)
 def new_user_info_post():
     # 初始化返回内容
     response_json = {
@@ -34,46 +39,38 @@ def new_user_info_post():
         "data": {}
     }
 
-    # 1.校验传参
-    # 取出请求参数
-    try:
-        request_json = flask.request.json
-    except Exception as e:
-        logmsg = "/registerApply.json数据格式化失败，失败原因：" + repr(e)
-        api_logger.error(logmsg)
-        return ApiError.requestfail_error("接口数据异常")
-    else:
-        if request_json is None:
-            return ApiError.requestfail_error("接口数据异常")
-    # 检查必传项是否遗留
-    # mail_address
-    if "mail_address" not in request_json:
-        return ApiError.requestfail_nokey("mail_address")
-    # 检查通过
-    # 检查必传项内容格式
-    # mail_address
-    if type(request_json["mail_address"]) is not str or len(request_json["mail_address"]) > 100:
-        return ApiError.requestfail_value("mail_address")
-    elif re.search("^[0-9a-zA-Z_]{1,100}@fclassroom.com$", request_json["mail_address"]) is None:
-        return ApiError.requestfail_value("mail_address")
-    # 检查通过
-
     # 取出传入参数值
-    requestvalue_mail = request_json["mail_address"]
+    requestvalue_mail = flask.request.json["mail_address"]
+
+    # 校验邮箱地址格式
+    mail_reg = '^([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+@([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+\.[a-zA-Z]{2,3}$'
+    if not re.search(mail_reg, requestvalue_mail):
+        return route.error_msgs[201]['msg_illegal_format']
 
     # 2.校验账户是否存在
-    userdata = ApiCheck.check_user(requestvalue_mail)
-    if userdata["exist"] is False:
-        pass
-    elif userdata["exist"] is True and userdata["userStatus"] == 0:
-        pass
-    elif userdata["exist"] is True and userdata["userStatus"] in [-2, -1, 1]:
-        return ApiError.requestfail_error("该邮箱已被注册")
+    try:
+        uinfo_mysql = model_mysql_userinfo.query.filter(
+            or_(
+                model_mysql_userinfo.userEmail == requestvalue_mail,
+                model_mysql_userinfo.userNewEmail == requestvalue_mail
+            )
+        ).first()
+    except Exception as e:
+        logmsg = "数据库中账户信息读取失败，失败原因：" + repr(e)
+        api_logger.error(logmsg)
+        return route.error_msgs[500]['msg_db_error']
     else:
-        return ApiError.requestfail_error("账户信息校验异常")
+        if uinfo_mysql is None:
+            pass
+        elif uinfo_mysql.userStatus == 0:
+            pass
+        elif uinfo_mysql.userStatus in [-2, -1, 1]:
+            return route.error_msgs[201]['msg_mail_exist']
+        else:
+            return route.error_msgs[201]['msg_status_error']
 
     # 3.如果账户不存在，则数据库以及缓存中插入未激活状态的账户数据以及对应的未完成的操作记录
-    if userdata["exist"] is False:
+    if uinfo_mysql is None:
         # 查询关键操作唯一标识符
         odata = ApiCheck.check_operate(
             appconfig.get("operation_alias", "register")
@@ -81,9 +78,25 @@ def new_user_info_post():
         if odata["exist"] is True:
             pass
         elif odata["exist"] is False:
-            return ApiError.requestfail_error("关键操作别名不存在")
+            return route.error_msgs[500]['msg_server_error']
         else:
-            return ApiError.requestfail_server("操作处理异常")
+            return route.error_msgs[500]['msg_server_error']
+
+        # 在库中插入账户未激活的信息
+        # 先插入mysql
+        newuser = model_mysql_userinfo(
+            userLoginName='',
+            userEmail=requestvalue_mail,
+            userStatus=0,
+            userAddTime=datetime.datetime.now()
+        )
+        try:
+            mysqlpool.session.add(newuser)
+            mysqlpool.session.commit()
+        except Exception as e:
+            logmsg = "数据库新增账户数据失败，失败原因：" + repr(e)
+            api_logger.error(logmsg)
+            return ApiError.requestfail_server(logmsg)
 
         # 生成操作码
         code = str(
@@ -97,6 +110,7 @@ def new_user_info_post():
         # 先发送邮件，成功后再记录数据
         # 保证过滤掉不存在的邮件地址
         send_result_flag, send_result_type = publicmailer.sendmail_register(
+            newuser.userId,
             requestvalue_mail,
             code,
             odata["operationId"]
@@ -109,34 +123,7 @@ def new_user_info_post():
                 return ApiError.requestfail_server("公共邮箱登陆失败")
             elif send_result_type == 3:
                 return ApiError.requestfail_error("邮件发送失败，请检查邮箱地址")
-        # 在库中插入账户未激活的信息
-        # 先插入mysql
-        newuser = model_mysql_userinfo(
-            userEmail=requestvalue_mail,
-            userStatus=0,
-            userAddTime=datetime.datetime.now()
-        )
-        try:
-            mysqlpool.session.add(newuser)
-            mysqlpool.session.commit()
-        except Exception as e:
-            logmsg = "数据库新增账户数据失败，失败原因：" + repr(e)
-            api_logger.error(logmsg)
-            return ApiError.requestfail_server(logmsg)
-        # 然后写入redis
-        try:
-            model_redis_userinfo.set(
-                str(requestvalue_mail),
-                "{\"userId\":" + str(newuser.userId) +
-                ",\"userNickName\":null" +
-                ",\"userPassword\":null" +
-                ",\"userStatus\":0" +
-                ",\"userRoleId\":null}"
-            )
-        except Exception as e:
-            logmsg = "缓存新增账户数据失败，失败原因：" + repr(e)
-            api_logger.error(logmsg)
-            return ApiError.requestfail_server(logmsg)
+
         # 将操作码数据写入mysql
         insertdata = model_mysql_useroperationrecord(
             userId=newuser.userId,
@@ -153,7 +140,7 @@ def new_user_info_post():
             api_logger.error(logmsg)
             return ApiError.requestfail_server(logmsg)
     # 4.如果账户存在但状态为未激活，则将先前的账户操作记录数据置为无效，然后插入新的未完成的操作记录
-    elif userdata["exist"] is True and userdata["userStatus"] == 0:
+    elif uinfo_mysql.userStatus == 0:
         # 查询关键操作唯一标识符
         odata = ApiCheck.check_operate(
             appconfig.get("operation_alias", "register")
@@ -175,6 +162,7 @@ def new_user_info_post():
         )
         # 发送包含账户信息确认页链接的邮件
         send_result_flag, send_result_type = publicmailer.sendmail_register(
+            uinfo_mysql.userId,
             requestvalue_mail,
             code,
             odata["operationId"]
@@ -190,7 +178,7 @@ def new_user_info_post():
         # 查询mysql中的操作记录
         try:
             rdata_mysql = model_mysql_useroperationrecord.query.filter_by(
-                userId=userdata["userId"],
+                userId=uinfo_mysql.userId,
                 operationId=odata["operationId"],
                 recordStatus=0
             ).all()
@@ -210,7 +198,7 @@ def new_user_info_post():
                 return ApiError.requestfail_server(logmsg)
         # 将新操作码数据写入mysql
         insertdata = model_mysql_useroperationrecord(
-            userId=userdata["userId"],
+            userId=uinfo_mysql.userId,
             operationId=odata["operationId"],
             recordCode=code,
             recordStatus=0,
