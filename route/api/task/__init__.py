@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
 
 from flask import Blueprint
+from flask_restful import Api
+
+from .worker import Worker
+from .task import Task
+from .task_list import TaskList
+from .task_result import TaskResult
 
 api_task = Blueprint('api_task', __name__)
-
-# 加载具体路由
-from route.api.task.apiTestPlanTaskConfigurationInfo import api_test_task_configuration_info
-from route.api.task.personalApiTestPlanTaskList import personal_api_test_plan_task_list
-from route.api.task.registerWorker import worker_register
-from route.api.task.stopTestTask import stop_test_task
-from route.api.task.testTaskFinished import test_task_finished
-from route.api.task.newTestTask import new_test_task
+api = Api(api_task)
+api.add_resource(Worker, '/worker.json')
+api.add_resource(Task, '/task.json')
+api.add_resource(TaskList, '/taskList.json')
+api.add_resource(TaskResult, '/taskResult.json')
