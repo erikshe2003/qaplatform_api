@@ -47,7 +47,7 @@ def sync_personal_api_test_plan_table(ws):
         # 首次入参仅要求mail/token/planId
         json_action = check_parameter(
             action,
-            ['mail', str, None, None],
+            ['userId', int, None, None],
             ['token', str, None, None],
             ['planId', int, None, None]
         )
@@ -59,28 +59,28 @@ def sync_personal_api_test_plan_table(ws):
                 check_flag = False
         # 校验token
         if check_flag:
-            if check_token(json_action['mail'], json_action['token']):
+            if check_token(json_action['userId'], json_action['token']):
                 api_logger.debug('token检查通过')
             else:
                 api_logger.debug('token检查失败')
                 check_flag = False
         # 校验账户状态
         if check_flag:
-            if check_user(json_action['mail']):
+            if check_user(json_action['userId']):
                 api_logger.debug('账户状态检查通过')
             else:
                 api_logger.debug('账户状态检查失败')
                 check_flag = False
         # 校验权限
         if check_flag:
-            if check_auth(json_action['mail'], url):
+            if check_auth(json_action['userId'], url):
                 api_logger.debug('账户权限检查通过')
             else:
                 api_logger.debug('账户权限检查失败')
                 check_flag = False
         # 校验计划所有者
         if check_flag:
-            if check_owner(json_action['planId'], json_action['mail']):
+            if check_owner(json_action['planId'], json_action['userId']):
                 api_logger.debug('计划的账户所有者检查通过')
             else:
                 api_logger.debug('计划的账户所有者检查失败')
@@ -205,7 +205,7 @@ def sync_personal_api_test_plan_table(ws):
             ws.close()
 
 
-def check_owner(plan_id, mail):
+def check_owner(plan_id, user_id):
     # 查询测试计划基础信息，并取出所属者账户id
     try:
         mysql_plan_info = model_mysql_planinfo.query.filter(
@@ -220,20 +220,7 @@ def check_owner(plan_id, mail):
         else:
             plan_user_id = mysql_plan_info.ownerId
 
-    # 查询账户信息，并取出账户id
-    try:
-        mysql_userinfo = model_mysql_userinfo.query.filter(
-            model_mysql_userinfo.userEmail == mail
-        ).first()
-        api_logger.debug("model_mysql_userinfo数据读取成功")
-    except Exception as e:
-        api_logger.error("model_mysql_userinfo数据读取失败，失败原因：" + repr(e))
-        return None, route.error_msgs[500]['msg_db_error']
-    else:
-        if mysql_userinfo is None:
-            return None, route.error_msgs[201]['msg_no_user']
-        else:
-            request_user_id = mysql_userinfo.userId
+    request_user_id = user_id
 
     # 如果操作者和计划拥有者不是同一人，则报错
     if plan_user_id != request_user_id:
