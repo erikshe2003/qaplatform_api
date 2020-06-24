@@ -24,18 +24,16 @@ except Exception as e:
     raise RuntimeError(logmsg)
 
 # 加载模块
-from route.api.user import user_apis
-automation.register_blueprint(user_apis, url_prefix="/api/user")
-from route.api.management.role import api_management_role
-automation.register_blueprint(api_management_role, url_prefix="/api/management/role")
-from route.api.management.user import api_management_user
-automation.register_blueprint(api_management_user, url_prefix="/api/management/user")
+from route.api.management import api_management
+automation.register_blueprint(api_management, url_prefix="/api/management")
 from route.api.plan import api_plan
 automation.register_blueprint(api_plan, url_prefix="/api/plan")
 from route.api.task import api_task
 automation.register_blueprint(api_task, url_prefix="/api/task")
 from route.api.test import api_test
 automation.register_blueprint(api_test, url_prefix="/api/test")
+from route.api.user import api_user
+automation.register_blueprint(api_user, url_prefix="/api/user")
 
 from route.socket.test import ws_test
 sockets.register_blueprint(ws_test, url_prefix="/ws/test")

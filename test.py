@@ -18,6 +18,7 @@ if __name__ == '__main__':
             automation,
             handler_class=WebSocketHandler
         )
+        print('服务已启动')
         server.serve_forever()
     except Exception as e:
         logmsg = "系统初始化|测试环境启动失败，失败原因：" + repr(e)
