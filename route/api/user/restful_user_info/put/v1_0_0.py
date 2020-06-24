@@ -14,7 +14,6 @@ from handler.log import api_logger
 from handler.config import appconfig
 
 from model.mysql import model_mysql_userinfo, model_mysql_useroperationrecord
-from model.redis import model_redis_userinfo
 
 
 # 基础信息修改-api路由
@@ -246,26 +245,6 @@ def user_info_put():
         mysqlpool.session.commit()
     except Exception as e:
         logmsg = "/setBaseInfo.json账户信息存入数据库失败，失败原因：" + repr(e)
-        api_logger.error(logmsg)
-        return ApiError.requestfail_server(logmsg)
-    # 尝试写入redis
-    try:
-        model_redis_userinfo.set(
-            requestvalue_mail,
-            "{\"userId\":" + str(user.userId) +
-            ",\"userNickName\":" + (
-                "\"" + str(user.userNickName) + "\"" if user.userNickName is not None else "null"
-            ) +
-            ",\"userPassword\":" + (
-                "\"" + str(user.userPassword) + "\"" if user.userPassword is not None else "null"
-            ) +
-            ",\"userStatus\":" + str(user.userStatus) +
-            ",\"userRoleId\":" + (
-                str(user.userRoleId) if user.userRoleId is not None else "null"
-            ) + "}"
-        )
-    except Exception as e:
-        logmsg = "/setBaseInfo.json账户信息存入缓存失败，失败原因：" + repr(e)
         api_logger.error(logmsg)
         return ApiError.requestfail_server(logmsg)
 

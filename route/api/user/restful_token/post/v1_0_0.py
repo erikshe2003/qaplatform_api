@@ -11,7 +11,6 @@ from model.redis import model_redis_usertoken
 
 from handler.log import api_logger
 from handler.api.error import ApiError
-from handler.api.check import ApiCheck
 
 
 # 账户手动登陆-api路由
@@ -59,7 +58,7 @@ def token_post():
         elif uinfo_mysql.userStatus == 0:
             return route.error_msgs[201]['msg_need_register']
         elif uinfo_mysql.userStatus == -1:
-            return route.error_msgs[201]['msg_be_forbidden']
+            return route.error_msgs[201]['msg_user_forbidden']
         else:
             return route.error_msgs[201]['msg_status_error']
 
@@ -67,27 +66,9 @@ def token_post():
     if requestvalue_password != uinfo_mysql.userPassword:
         return ApiError.requestfail_error("登陆密码错误")
 
-    # 定义data中的user_info
-    user_token = str(
-        uuid.uuid3(
-            uuid.NAMESPACE_DNS, requestvalue_name + str(
-                datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            )
-        )
-    )
-    response_json["data"]["access_token"] = user_token
+    # 刷新token
+    response_json["data"]["access_token"] = route.refresh_redis_usertoken(uinfo_mysql.userId, requestvalue_check)
 
-    # 5.将token写入redis
-    if requestvalue_check is True:
-        t = (datetime.datetime.now() + datetime.timedelta(days=30)).strftime('%Y-%m-%d %H:%M:%S')
-    else:
-        t = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')
-    model_redis_usertoken.set(
-        uinfo_mysql.userId,
-        "{\"userToken\":\"" + user_token + "\"," +
-        "\"validTime\":\"" + t +
-        "\"}"
-    )
     response_json["data"]["user_id"] = uinfo_mysql.userId
 
     # 6.返回信息

@@ -4,6 +4,9 @@ import flask
 import re
 import datetime
 import uuid
+import route
+
+from sqlalchemy import or_
 
 from handler.mail import publicmailer
 from handler.pool import mysqlpool
@@ -13,6 +16,7 @@ from handler.api.error import ApiError
 from handler.api.check import ApiCheck
 
 from model.mysql import model_mysql_useroperationrecord
+from model.mysql import model_mysql_userinfo
 
 
 # 账户申请重置密码-api路由
@@ -23,6 +27,9 @@ from model.mysql import model_mysql_useroperationrecord
 # ----操作
 # 4.尝试发送包含账户信息确认页url的邮件
 # 5.返回信息给前端
+@route.check_post_parameter(
+    ['mail_address', str, 1, None]
+)
 def user_password_reset_apply_post():
     # 初始化返回内容
     response_json = {
@@ -31,44 +38,37 @@ def user_password_reset_apply_post():
         "data": {}
     }
 
-    # 1.校验传参
-    # 取出请求参数
-    try:
-        request_json = flask.request.json
-    except Exception as e:
-        logmsg = "/resetPasswordApply.json数据格式化失败，失败原因：" + repr(e)
-        api_logger.error(logmsg)
-        return ApiError.requestfail_error("接口数据异常")
-    else:
-        if request_json is None:
-            return ApiError.requestfail_error("接口数据异常")
-    # 检查必传参数
-    # 1.mail_address
-    if "mail_address" not in request_json:
-        return ApiError.requestfail_nokey("mail_address")
-    # 检查参数合法性
-    # 1.mail_address
-    if type(request_json["mail_address"]) is not str:
-        return ApiError.requestfail_value("mail_address")
-    elif re.search("^[0-9a-zA-Z_]{1,100}@fclassroom.com$", request_json["mail_address"]) is None:
-        return ApiError.requestfail_value("mail_address")
-    # 检查通过
-
     # 取出传入参数值
-    requestvalue_mail = request_json["mail_address"]
+    requestvalue_mail = flask.request.json["mail_address"]
+
+    # 校验邮箱地址格式
+    mail_reg = '^([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+@([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+\.[a-zA-Z]{2,3}$'
+    if not re.search(mail_reg, requestvalue_mail):
+        return route.error_msgs[201]['msg_illegal_format']
 
     # 2.校验账户是否存在
-    userdata = ApiCheck.check_user(requestvalue_mail)
-    if userdata["exist"] is False:
-        return ApiError.requestfail_error("账户不存在")
-    elif userdata["exist"] is True and userdata["userStatus"] == 1:
-        pass
-    elif userdata["exist"] is True and userdata["userStatus"] == 0:
-        return ApiError.requestfail_error("账户未激活")
-    elif userdata["exist"] is True and userdata["userStatus"] == -1:
-        return ApiError.requestfail_error("账户已禁用")
+    try:
+        uinfo_mysql = model_mysql_userinfo.query.filter(
+            or_(
+                model_mysql_userinfo.userEmail == requestvalue_mail,
+                model_mysql_userinfo.userNewEmail == requestvalue_mail
+            )
+        ).first()
+    except Exception as e:
+        logmsg = "数据库中账户信息读取失败，失败原因：" + repr(e)
+        api_logger.error(logmsg)
+        return route.error_msgs[500]['msg_db_error']
     else:
-        return ApiError.requestfail_error("账户信息校验异常")
+        if uinfo_mysql is None:
+            return route.error_msgs[201]['msg_no_user']
+        elif uinfo_mysql.userStatus == 1:
+            pass
+        elif uinfo_mysql.userStatus == 0:
+            return route.error_msgs[201]['msg_need_register']
+        elif uinfo_mysql.userStatus == -1:
+            return route.error_msgs[201]['msg_user_forbidden']
+        else:
+            return route.error_msgs[201]['msg_status_error']
 
     # 检查通过
     # 查询关键操作唯一标识符
@@ -85,7 +85,7 @@ def user_password_reset_apply_post():
     # 查库，将之前未进行重置密码操作的记录全部置为无效
     try:
         data = model_mysql_useroperationrecord.query.filter_by(
-            userId=userdata["userId"],
+            userId=uinfo_mysql.userId,
             operationId=odata["operationId"],
             recordStatus=0
         ).all()
@@ -111,7 +111,7 @@ def user_password_reset_apply_post():
     )
     # 将内容入库
     insertdata = model_mysql_useroperationrecord(
-        userId=userdata["userId"],
+        userId=uinfo_mysql.userId,
         operationId=odata["operationId"],
         recordCode=code,
         recordStatus=0,
@@ -126,7 +126,8 @@ def user_password_reset_apply_post():
         return ApiError.requestfail_server(logmsg)
     # 发送重置密码邮件
     publicmailer.sendmail_reset_password(
-        request_json["mail_address"],
+        uinfo_mysql.userId,
+        requestvalue_mail,
         code,
         odata["operationId"]
     )

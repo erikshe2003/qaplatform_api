@@ -15,7 +15,6 @@ from handler.config import appconfig
 from model.mysql import model_mysql_tablesnap
 from model.mysql import model_mysql_planinfo
 from model.mysql import model_mysql_userinfo
-from model.redis import model_redis_userinfo
 from model.redis import modle_redis_apitestplanworktable
 
 """
@@ -221,33 +220,20 @@ def check_owner(plan_id, mail):
         else:
             plan_user_id = mysql_plan_info.ownerId
 
-    # 查询缓存中账户信息，并取出账户id
-    redis_userinfo = model_redis_userinfo.query(user_email=mail)
-    # 如果缓存中没查到，则查询mysql
-    if redis_userinfo is None:
-        try:
-            mysql_userinfo = model_mysql_userinfo.query.filter(
-                model_mysql_userinfo.userEmail == mail
-            ).first()
-            api_logger.debug("model_mysql_userinfo数据读取成功")
-        except Exception as e:
-            api_logger.error("model_mysql_userinfo数据读取失败，失败原因：" + repr(e))
-            return None, route.error_msgs[500]['msg_db_error']
-        else:
-            if mysql_userinfo is None:
-                return None, route.error_msgs[201]['msg_no_user']
-            else:
-                request_user_id = mysql_userinfo.userId
+    # 查询账户信息，并取出账户id
+    try:
+        mysql_userinfo = model_mysql_userinfo.query.filter(
+            model_mysql_userinfo.userEmail == mail
+        ).first()
+        api_logger.debug("model_mysql_userinfo数据读取成功")
+    except Exception as e:
+        api_logger.error("model_mysql_userinfo数据读取失败，失败原因：" + repr(e))
+        return None, route.error_msgs[500]['msg_db_error']
     else:
-        # 格式化缓存基础信息内容
-        try:
-            redis_userinfo_json = json.loads(redis_userinfo.decode("utf8"))
-            api_logger.debug("redis_userinfo_json缓存账户数据json格式化成功")
-        except Exception as e:
-            api_logger.error("redis_userinfo_json缓存账户数据json格式化失败，失败原因：" + repr(e))
-            return None, route.error_msgs[500]['msg_json_format_fail']
+        if mysql_userinfo is None:
+            return None, route.error_msgs[201]['msg_no_user']
         else:
-            request_user_id = redis_userinfo_json['userId']
+            request_user_id = mysql_userinfo.userId
 
     # 如果操作者和计划拥有者不是同一人，则报错
     if plan_user_id != request_user_id:

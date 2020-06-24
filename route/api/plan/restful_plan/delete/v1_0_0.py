@@ -22,7 +22,6 @@ from handler.pool import mysqlpool
 
 from model.mysql import model_mysql_planinfo
 from model.mysql import model_mysql_userinfo
-from model.redis import model_redis_userinfo
 
 
 @route.check_user
@@ -44,33 +43,20 @@ def plan_delete():
     mail_address = flask.request.headers['Mail']
     plan_id = int(flask.request.args['planId'])
 
-    # 查询缓存中账户信息，并取出账户id
-    redis_userinfo = model_redis_userinfo.query(user_email=mail_address)
-    # 如果缓存中没查到，则查询mysql
-    if redis_userinfo is None:
-        try:
-            mysql_userinfo = model_mysql_userinfo.query.filter(
-                model_mysql_userinfo.userEmail == mail_address
-            ).first()
-            api_logger.debug(mail_address + "的账户基础信息读取成功")
-        except Exception as e:
-            api_logger.error(mail_address + "的账户基础信息读取失败，失败原因：" + repr(e))
-            return route.error_msgs[500]['msg_db_error']
-        else:
-            if mysql_userinfo is None:
-                return route.error_msgs[201]['msg_no_user']
-            else:
-                user_id = mysql_userinfo.userId
+    # 查询mysql中账户信息，并取出账户id
+    try:
+        mysql_userinfo = model_mysql_userinfo.query.filter(
+            model_mysql_userinfo.userEmail == mail_address
+        ).first()
+        api_logger.debug(mail_address + "的账户基础信息读取成功")
+    except Exception as e:
+        api_logger.error(mail_address + "的账户基础信息读取失败，失败原因：" + repr(e))
+        return route.error_msgs[500]['msg_db_error']
     else:
-        # 格式化缓存基础信息内容
-        try:
-            redis_userinfo_json = json.loads(redis_userinfo.decode("utf8"))
-            api_logger.debug(mail_address + "的缓存账户数据json格式化成功")
-        except Exception as e:
-            api_logger.error(mail_address + "的缓存账户数据json格式化失败，失败原因：" + repr(e))
-            return route.error_msgs[500]['msg_json_format_fail']
+        if mysql_userinfo is None:
+            return route.error_msgs[201]['msg_no_user']
         else:
-            user_id = redis_userinfo_json['userId']
+            user_id = mysql_userinfo.userId
 
     # 逻辑删除测试计划
     try:

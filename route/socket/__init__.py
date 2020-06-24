@@ -7,7 +7,6 @@ from handler.log import api_logger
 from handler.pool import mysqlpool
 
 from model.redis import model_redis_usertoken
-from model.redis import model_redis_userinfo
 from model.redis import model_redis_apiauth
 
 from model.mysql import model_mysql_userinfo
@@ -110,74 +109,27 @@ def check_token(mail, token):
 
 def check_user(mail):
     api_logger.debug("准备查询" + mail + "的缓存账户数据")
-    uinfo_redis = model_redis_userinfo.query(user_email=mail)
-    # 如果缓存中查询到了
-    if uinfo_redis is not None:
-        api_logger.debug(mail + "的缓存账户数据存在")
-        # 格式化缓存基础信息内容
-        try:
-            uinfo = json.loads(uinfo_redis.decode("utf8"))
-            api_logger.debug(mail + "的缓存账户数据json格式化成功")
-        except Exception as e:
-            api_logger.error(mail + "的缓存账户数据json格式化失败，失败原因：" + repr(e))
+    # 尝试从mysql中查询
+    try:
+        api_logger.debug("准备查询" + mail + "的账户数据")
+        uinfo_mysql = model_mysql_userinfo.query.filter_by(userEmail=mail).first()
+        api_logger.debug(mail + "的账户数据查询成功")
+    except Exception as e:
+        api_logger.error(mail + "的账户数据查询失败，失败原因：" + repr(e))
+        return False
+    else:
+        # 如果mysql中未查询到
+        if uinfo_mysql is None:
             return False
+        # 如果mysql中查询到了
         else:
             # 判断账户状态
-            if uinfo["userStatus"] == 0:
+            if uinfo_mysql.userStatus == 0:
                 return False
-            elif uinfo["userStatus"] == -1:
+            elif uinfo_mysql.userStatus == -1:
                 return False
-            elif uinfo["userStatus"] != 1:
+            elif uinfo_mysql.userStatus != 1:
                 return False
-    # 如果缓存中未查询到
-    else:
-        api_logger.debug(mail + "的缓存账户数据为空")
-        # 尝试从mysql中查询
-        try:
-            api_logger.debug("准备查询" + mail + "的账户数据")
-            uinfo_mysql = model_mysql_userinfo.query.filter_by(userEmail=mail).first()
-            api_logger.debug(mail + "的账户数据查询成功")
-        except Exception as e:
-            api_logger.error(mail + "的账户数据查询失败，失败原因：" + repr(e))
-            return False
-        else:
-            # 如果mysql中未查询到
-            if uinfo_mysql is None:
-                return False
-            # 如果mysql中查询到了
-            else:
-                # 将需缓存的内容缓存至redis的userInfo
-                # 需缓存内容:
-                # key=userEmail
-                # value="\"userId\": int,
-                #   \"userNickName\":str,
-                #   \"userPassword\":str,
-                #   \"userStatus\":int,
-                #   \"userRoleId\":int"
-                api_logger.debug("准备记录" + mail + "的账户缓存数据")
-                model_redis_userinfo.set(
-                    mail,
-                    "{\"userId\":" + str(uinfo_mysql.userId) +
-                    ",\"userNickName\":" + (
-                        "\"" + str(
-                            uinfo_mysql.userNickName) + "\"" if uinfo_mysql.userNickName is not None else "null"
-                    ) +
-                    ",\"userPassword\":" + (
-                        "\"" + str(
-                            uinfo_mysql.userPassword) + "\"" if uinfo_mysql.userPassword is not None else "null"
-                    ) +
-                    ",\"userStatus\":" + str(uinfo_mysql.userStatus) +
-                    ",\"userRoleId\":" + (
-                        str(uinfo_mysql.userRoleId) if uinfo_mysql.userRoleId is not None else "null"
-                    ) + "}"
-                )
-                # 判断账户状态
-                if uinfo_mysql.userStatus == 0:
-                    return False
-                elif uinfo_mysql.userStatus == -1:
-                    return False
-                elif uinfo_mysql.userStatus != 1:
-                    return False
     return True
 
 
@@ -198,36 +150,37 @@ def check_user(mail):
 """
 
 
-def check_auth(mail, url):
+def check_auth(user_id, url):
     # 取出账户所属roleId
     # 首先查询缓存中账户信息，尝试取出roleId
-    api_logger.debug("准备查询" + mail + "的缓存账户数据")
-    redis_userinfo = model_redis_userinfo.query(mail)
-    # 如果缓存中查询到了
-    if redis_userinfo is not None:
-        api_logger.debug(mail + "的缓存账户数据存在")
-        # 格式化缓存基础信息内容
-        try:
-            redis_userinfo_json = json.loads(redis_userinfo.decode("utf8"))
-            api_logger.debug(mail + "的缓存账户数据json格式化成功")
-        except Exception as e:
-            api_logger.error(mail + "的缓存账户数据json格式化失败，失败原因：" + repr(e))
-            return False
-        else:
+    api_logger.debug("准备查询缓存账户数据")
+    # 首先查询账户信息，尝试取出roleId
+    api_logger.debug("准备查询账户数据")
+    try:
+        api_logger.debug("准备查询账户数据")
+        uinfo_mysql = model_mysql_userinfo.query.filter_by(userId=user_id).first()
+        api_logger.debug("账户数据查询成功")
+    except Exception as e:
+        api_logger.error("账户数据查询失败，失败原因：" + repr(e))
+        return error_msgs['msg_db_error']
+    else:
+        # 如果查询到了
+        if uinfo_mysql is not None:
+            api_logger.debug("账户数据存在")
             # 取出roleId
-            role_id = redis_userinfo_json['userRoleId']
+            role_id = uinfo_mysql.userRoleId
             # 如果role_id不为空
             if role_id is not None:
                 # 根据roleId检查账户所属是否有api访问权限
-                api_logger.debug("准备查询" + mail + "所属角色的缓存api访问权限数据")
+                api_logger.debug("准备查询所属角色的缓存api访问权限数据")
                 redis_apiauth = model_redis_apiauth.query(role_id)
                 if redis_apiauth is not None:
                     # 格式化缓存api访问权限信息内容
                     try:
                         redis_apiauth_json = json.loads(redis_apiauth.decode("utf8"))
-                        api_logger.debug(mail + "的缓存api访问权限数据json格式化成功")
+                        api_logger.debug("api访问权限数据json格式化成功")
                     except Exception as e:
-                        api_logger.error(mail + "的缓存api访问权限数据json格式化失败，失败原因：" + repr(e))
+                        api_logger.error("api访问权限数据json格式化失败，失败原因：" + repr(e))
                         return False
                     else:
                         if url in redis_apiauth_json and redis_apiauth_json[url] != 1:
@@ -236,7 +189,7 @@ def check_auth(mail, url):
                 else:
                     # 尝试去mysql中查询最新的角色权限配置数据
                     try:
-                        api_logger.debug("准备查询" + mail + "所属角色的api访问权限数据")
+                        api_logger.debug("准备查询所属角色的api访问权限数据")
                         mysql_role_api_auth = mysqlpool.session.query(
                             model_mysql_rolepermission,
                             model_mysql_apiinfo.apiUrl,
@@ -290,9 +243,9 @@ def check_auth(mail, url):
             else:
                 # 无角色，直接返回无权限
                 return False
-    else:
-        # 无账号信息，直接返回无权限
-        return False
+        else:
+            # 无账号信息，直接返回无权限
+            return False
     return True
 
 
