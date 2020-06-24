@@ -17,6 +17,12 @@ class UserInfo(mysqlpool.Model):
         unique=True,
         primary_key=True
     )
+    userLoginName = mysqlpool.Column(
+        name="userLoginName",
+        type_=VARCHAR(100),
+        unique=True,
+        nullable=False
+    )
     userNickName = mysqlpool.Column(
         name="userNickName",
         type_=VARCHAR(100),
@@ -25,7 +31,7 @@ class UserInfo(mysqlpool.Model):
     userEmail = mysqlpool.Column(
         name="userEmail",
         type_=VARCHAR(100),
-        nullable=False
+        nullable=True
     )
     userPassword = mysqlpool.Column(
         name="userPassword",

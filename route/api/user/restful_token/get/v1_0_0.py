@@ -2,6 +2,7 @@
 
 import flask
 import re
+import route
 
 from handler.api.error import ApiError
 from handler.api.check import ApiCheck
@@ -14,6 +15,9 @@ from handler.api.check import ApiCheck
 # 3.校验令牌是否有效
 # ----操作
 # 4.返回信息
+@route.check_get_parameter(
+    ['user_token', str, 36, 36]
+)
 def token_get():
     # 初始化返回内容
     response_json = {
@@ -22,30 +26,12 @@ def token_get():
         "data": {}
     }
 
-    # 检查必传项是否遗留
-    # mail_address
-    if "mail_address" not in flask.request.args:
-        return ApiError.requestfail_nokey("mail_address")
-    # user_token
-    if "user_token" not in flask.request.args:
-        return ApiError.requestfail_nokey("user_token")
-    # 检查通过
-    # 检查必传项内容格式
-    # mail_address
-    if type(flask.request.args["mail_address"]) is not str or len(flask.request.args["mail_address"]) > 100:
-        return ApiError.requestfail_value("mail_address")
-    if re.search("^[0-9a-zA-Z_]{1,100}@fclassroom.com$", flask.request.args["mail_address"]) is None:
-        return ApiError.requestfail_value("mail_address")
-    # record_code
-    if type(flask.request.args["user_token"]) is not str or len(flask.request.args["user_token"]) > 100:
-        return ApiError.requestfail_value("user_token")
-
     # 取出传入参数值
-    requestvalue_mail = flask.request.args["mail_address"]
+    requestvalue_userid = int(flask.request.headers["UserId"])
     requestvalue_token = flask.request.args["user_token"]
 
     # 2.校验账户是否存在
-    userdata = ApiCheck.check_user(requestvalue_mail)
+    userdata = ApiCheck.check_user(requestvalue_userid)
     if userdata["exist"] is False:
         return ApiError.requestfail_error("账户不存在")
     elif userdata["exist"] is True and userdata["userStatus"] == 0:

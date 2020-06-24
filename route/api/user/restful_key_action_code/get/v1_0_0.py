@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 
 import flask
-import re
+import route
+
+from sqlalchemy import and_
 
 from handler.log import api_logger
 from handler.api.check import ApiCheck
-from handler.api.error import ApiError
+
+from model.mysql import model_mysql_userinfo
 
 
 # 账户重置密码-api路由
@@ -15,6 +18,12 @@ from handler.api.error import ApiError
 # 3.校验操作码是否有效
 # ----操作
 # 4.返回校验数据
+@route.check_get_parameter(
+    ['user_id', int, 1, None],
+    ['mail_address', str, 1, None],
+    ['record_code', str, 1, None],
+    ['operation_id', int, 1, None]
+)
 def key_action_code_get():
     # 初始化返回内容
     response_json = {
@@ -23,68 +32,53 @@ def key_action_code_get():
         "data": {}
     }
 
-    # 1.校验传参
-    # 取出请求参数
-    try:
-        request_json = flask.request.json
-    except Exception as e:
-        logmsg = "/recordCodeCheck.json数据格式化失败，失败原因：" + repr(e)
-        api_logger.error(logmsg)
-        return ApiError.requestfail_error("接口数据异常")
-    else:
-        if request_json is None:
-            return ApiError.requestfail_error("接口数据异常")
-    # 检查必传项是否遗留
-    # 1.mail_address
-    if "mail_address" not in request_json:
-        return ApiError.requestfail_nokey("mail_address")
-    # 2.record_code
-    if "record_code" not in request_json:
-        return ApiError.requestfail_nokey("record_code")
-    # 3.operation_id
-    if "operation_id" not in request_json:
-        return ApiError.requestfail_nokey("operation_id")
-    # 检查通过
-    # 检查必传项内容格式
-    # 1.mail_address
-    if type(request_json["mail_address"]) is not str or len(request_json["mail_address"]) > 100:
-        return ApiError.requestfail_value("mail_address")
-    elif re.search("^[0-9a-zA-Z_]{1,100}@fclassroom.com$", request_json["mail_address"]) is None:
-        return ApiError.requestfail_value("mail_address")
-    # 2.record_code
-    if type(request_json["record_code"]) is not str or len(request_json["record_code"]) > 100:
-        return ApiError.requestfail_value("record_code")
-    # 3.operation_id
-    if type(request_json["operation_id"]) is not int:
-        return ApiError.requestfail_value("operation_id")
-    # 检查通过
-
     # 取出传入参数值
-    requestvalue_mail = request_json["mail_address"]
-    requestvalue_recordcode = request_json["record_code"]
-    requestvalue_operateid = request_json["operation_id"]
+    requestvalue_id = int(flask.request.args["user_id"])
+    requestvalue_mail = flask.request.args["mail_address"]
+    requestvalue_recordcode = flask.request.args["record_code"]
+    requestvalue_operateid = int(flask.request.args["operation_id"])
 
     # 2.校验账户是否存在
-    userdata = ApiCheck.check_user(requestvalue_mail)
+    userdata = ApiCheck.check_user(requestvalue_id)
     if userdata["exist"] is False:
-        return ApiError.requestfail_error("账户不存在")
+        return route.error_msgs[201]['msg_no_user']
     elif userdata["exist"] is True and userdata["userStatus"] in [0, 1]:
         pass
     elif userdata["userStatus"] == -1:
-        return ApiError.requestfail_error("账户已禁用")
+        return route.error_msgs[201]['msg_no_user']
     else:
-        return ApiError.requestfail_error("账户信息校验异常")
+        return route.error_msgs[201]['msg_status_error']
+
+    # 校验id与mail是否为同一人
+    try:
+        uinfo_mysql = model_mysql_userinfo.query.filter(
+            and_(
+                model_mysql_userinfo.userId == requestvalue_id,
+                model_mysql_userinfo.userEmail == requestvalue_mail
+            )
+        ).first()
+    except Exception as e:
+        logmsg = "数据库中账户信息读取失败，失败原因：" + repr(e)
+        api_logger.error(logmsg)
+        return route.error_msgs[500]['msg_db_error']
+    else:
+        if not uinfo_mysql:
+            return route.error_msgs[201]['msg_user_id_wrong']
 
     # 3.校验操作码是否有效
-    codeexist, codevalid = ApiCheck.check_code(userdata["userId"], requestvalue_recordcode, requestvalue_operateid)
+    codeexist, codevalid = ApiCheck.check_code(
+        userdata["userId"],
+        requestvalue_recordcode,
+        requestvalue_operateid
+    )
     if codeexist is False:
-        return ApiError.requestfail_error("操作码错误或不存在")
+        return route.error_msgs[201]['action_code_non']
     elif codeexist is True and codevalid == 0:
-        return ApiError.requestfail_error("操作码过期")
+        return route.error_msgs[201]['action_code_expire']
     elif codeexist is True and codevalid == 1:
         pass
     else:
-        return ApiError.requestfail_server("操作码校验异常")
+        return route.error_msgs[201]["action_code_error"]
 
     # 4.返回校验数据
     response_json["error_msg"] = "账户操作码校验通过"

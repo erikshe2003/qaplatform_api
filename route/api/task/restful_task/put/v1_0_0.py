@@ -15,8 +15,6 @@ from model.mysql import model_mysql_taskinfo
 from model.mysql import model_mysql_taskassign
 from model.mysql import model_mysql_workerinfo
 
-from model.redis import model_redis_userinfo
-
 """
     强行停止测试任务
     ----校验
@@ -49,33 +47,20 @@ def task_put():
     mail_address = flask.request.headers['Mail']
     task_id = flask.request.json['taskId']
 
-    # 根据mail_address在缓存中查找账户id
-    redis_user_info = model_redis_userinfo.query(user_email=mail_address)
-    # 如果缓存中没查到，则查询mysql
-    if redis_user_info is None:
-        try:
-            mysql_user_info = model_mysql_userinfo.query.filter(
-                model_mysql_userinfo.userEmail == mail_address
-            ).first()
-            api_logger.debug(mail_address + "的账户基础信息读取成功")
-        except Exception as e:
-            api_logger.error(mail_address + "的账户基础信息读取失败，失败原因：" + repr(e))
-            return route.error_msgs[500]['msg_db_error']
-        else:
-            if mysql_user_info is None:
-                return route.error_msgs[201]['msg_no_user']
-            else:
-                user_id = mysql_user_info.userId
+    # 查找账户id
+    try:
+        mysql_user_info = model_mysql_userinfo.query.filter(
+            model_mysql_userinfo.userEmail == mail_address
+        ).first()
+        api_logger.debug(mail_address + "的账户基础信息读取成功")
+    except Exception as e:
+        api_logger.error(mail_address + "的账户基础信息读取失败，失败原因：" + repr(e))
+        return route.error_msgs[500]['msg_db_error']
     else:
-        # 格式化缓存中基础信息内容
-        try:
-            redis_user_info_json = json.loads(redis_user_info.decode("utf8"))
-            api_logger.debug(mail_address + "的缓存账户数据json格式化成功")
-        except Exception as e:
-            api_logger.error(mail_address + "的缓存账户数据json格式化失败，失败原因：" + repr(e))
-            return route.error_msgs[500]['msg_json_format_fail']
+        if mysql_user_info is None:
+            return route.error_msgs[201]['msg_no_user']
         else:
-            user_id = redis_user_info_json['userId']
+            user_id = mysql_user_info.userId
 
     # 根据user_id/task_id查询测试任务记录
     try:

@@ -12,7 +12,6 @@ from handler.pool import mysqlpool
 from model.mysql import model_mysql_planinfo
 from model.mysql import model_mysql_tablesnap
 from model.mysql import model_mysql_userinfo
-from model.redis import model_redis_userinfo
 
 """
     查看个人目录下所有的测试计划-api路由
@@ -58,33 +57,20 @@ def plan_list_get():
     page_number = int(flask.request.args['pageNumber'])
     key_word = flask.request.args['keyword']
 
-    # 查询缓存中账户信息，并取出账户id
-    redis_userinfo = model_redis_userinfo.query(user_email=operator_mail_address)
-    # 如果缓存中没查到，则查询mysql
-    if redis_userinfo is None:
-        try:
-            mysql_userinfo = model_mysql_userinfo.query.filter(
-                model_mysql_userinfo.userEmail == operator_mail_address
-            ).first()
-            api_logger.debug("账户基础信息读取成功")
-        except Exception as e:
-            api_logger.error("账户基础信息读取失败，失败原因：" + repr(e))
-            return route.error_msgs[500]['msg_db_error']
-        else:
-            if mysql_userinfo is None:
-                return route.error_msgs[201]['msg_no_user']
-            else:
-                operate_user_id = mysql_userinfo.userId
+    # 查询mysql中账户信息，并取出账户id
+    try:
+        mysql_userinfo = model_mysql_userinfo.query.filter(
+            model_mysql_userinfo.userEmail == operator_mail_address
+        ).first()
+        api_logger.debug("账户基础信息读取成功")
+    except Exception as e:
+        api_logger.error("账户基础信息读取失败，失败原因：" + repr(e))
+        return route.error_msgs[500]['msg_db_error']
     else:
-        # 格式化缓存基础信息内容
-        try:
-            redis_userinfo_json = json.loads(redis_userinfo.decode("utf8"))
-            api_logger.debug("缓存账户数据json格式化成功")
-        except Exception as e:
-            api_logger.error("缓存账户数据json格式化失败，失败原因：" + repr(e))
-            return route.error_msgs[500]['msg_json_format_fail']
+        if mysql_userinfo is None:
+            return route.error_msgs[201]['msg_no_user']
         else:
-            operate_user_id = redis_userinfo_json['userId']
+            operate_user_id = mysql_userinfo.userId
 
     """
         预备测试计划开放级别
