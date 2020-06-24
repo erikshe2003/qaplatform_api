@@ -40,7 +40,6 @@ def plan_get():
         "data": {
             "id": 0,
             "title": "",
-            "mail": "",
             "description": "",
             "type": 0,
             "openLevel": 0,
@@ -55,11 +54,9 @@ def plan_get():
         }
     }
 
-    request_user_id = None
     plan_user_id = None
     # 取出入参
-    request_head_mail = flask.request.headers['Mail']
-    response_json['data']['mail'] = request_head_mail
+    request_user_id = flask.request.headers['UserId']
     plan_id = flask.request.args['planId']
 
     # 查询测试计划基础信息，并取出所属者账户id
@@ -81,21 +78,6 @@ def plan_get():
             response_json['data']['type'] = mysql_plan_info.planType
             response_json['data']['addTime'] = str(mysql_plan_info.planAddTime)
             response_json['data']['openLevel'] = mysql_plan_info.planOpenLevel
-
-    # 查询mysql中账户信息
-    try:
-        mysql_userinfo = model_mysql_userinfo.query.filter(
-            model_mysql_userinfo.userEmail == request_head_mail
-        ).first()
-        api_logger.debug("Mail=" + request_head_mail + "的model_redis_userinfo信息读取成功")
-    except Exception as e:
-        api_logger.error("Mail=" + request_head_mail + "的model_redis_userinfo信息读取失败，失败原因：" + repr(e))
-        return route.error_msgs[500]['msg_db_error']
-    else:
-        if mysql_userinfo is None:
-            return route.error_msgs[201]['msg_no_user']
-        else:
-            request_user_id = mysql_userinfo.userId
 
     # 根据测试计划开放级别以及操作者id/计划拥有者id判断返回内容
     if request_user_id == plan_user_id:
