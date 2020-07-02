@@ -56,7 +56,7 @@ def task_post():
 
     # 取出数据
     # header
-    mail_address = flask.request.headers['Mail']
+    user_id = flask.request.headers['UserId']
     # body
     plan_id = flask.request.json['planId']
     description = flask.request.json['description']
@@ -102,21 +102,6 @@ def task_post():
         elif flask.request.json['times'] < 1:
             return route.error_msgs[201]['msg_data_error']
         times = flask.request.json['times']
-
-    # 查找账户id
-    try:
-        mysql_user_info = model_mysql_userinfo.query.filter(
-            model_mysql_userinfo.userEmail == mail_address
-        ).first()
-        api_logger.debug(mail_address + "的账户基础信息读取成功")
-    except Exception as e:
-        api_logger.error(mail_address + "的账户基础信息读取失败，失败原因：" + repr(e))
-        return route.error_msgs[500]['msg_db_error']
-    else:
-        if mysql_user_info is None:
-            return route.error_msgs[201]['msg_no_user']
-        else:
-            user_id = mysql_user_info.userId
 
     # 为了将来能够看日志，必须要有不变的快照数据，所以tableSnap的不靠谱
     # 尝试于redis读取工作台快照临时数据

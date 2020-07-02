@@ -6,8 +6,6 @@ import route
 
 from sqlalchemy import and_, func
 
-from handler.api.error import ApiError
-from handler.api.check import ApiCheck
 from handler.log import api_logger
 
 from handler.pool import mysqlpool
