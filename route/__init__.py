@@ -22,9 +22,13 @@ from model.mysql import model_mysql_functioninfo
 from model.mysql import model_mysql_functionorg
 
 
+
+
 # 201请求错误/301传参非法/500系统异常
 error_msgs = {
     201: {
+        'msg_exit_subject': {"error_code": 201, "error_msg": "项目已存在", "data": {}},
+        'msg_no_subject': {"error_code": 201, "error_msg": "项目不存在", "data": {}},
         'action_code_non': {"error_code": 201, "error_msg": "操作码不存在", "data": {}},
         'action_code_expire': {"error_code": 201, "error_msg": "操作码已过期", "data": {}},
         'action_code_error': {"error_code": 201, "error_msg": "操作码异常", "data": {}},

@@ -34,7 +34,10 @@ from route.api.test import api_test
 automation.register_blueprint(api_test, url_prefix="/api/test")
 from route.api.user import api_user
 automation.register_blueprint(api_user, url_prefix="/api/user")
-
+from route.api.subject import api_subject
+automation.register_blueprint(api_subject, url_prefix="/api/subject")
+from route.api.subjects import api_subjects
+automation.register_blueprint(api_subjects, url_prefix="/api/subjects")
 from route.socket.test import ws_test
 sockets.register_blueprint(ws_test, url_prefix="/ws/test")
 from route.socket.report import ws_report
