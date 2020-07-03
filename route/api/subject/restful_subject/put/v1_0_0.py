@@ -39,11 +39,11 @@ def key_subject_put():
     "code": 200,
     "msg": "数据修改成功",
     "data": {
-        # "id": 1,
-        # "name": None,
-        # "logoPath": None,
-        # "description": None,
-        # "status": 0
+        "id": 1,
+        "name": None,
+        "logoPath": None,
+        "description": None,
+        "status": 0
     }
 }
 
@@ -88,30 +88,19 @@ def key_subject_put():
 
     """
 
-    mysql_subject_info = model_mysql_subject.query.filter(
-            model_mysql_subject.subjectId == subject_id
-        ).first()
+
 
     # 如果项目数据有且和传入的一致
-    if  mysql_subject_info.subjectName == subject_name and mysql_subject_info.subjectLogoPath==subject_logo_path and mysql_subject_info.subjectDescription==subject_description:
+    if  mysql_subject.subjectName == subject_name and mysql_subject.subjectLogoPath==subject_logo_path and mysql_subject.subjectDescription==subject_description:
         #
         pass
     # 如果c项目数据有且和传入的一致
-    elif mysql_subject_info.subjectName != subject_name or mysql_subject_info.subjectLogoPath!=subject_logo_path or mysql_subject_info.subjectDescription!=subject_description:
-        mysql_subject_info.subjectName = subject_name
-        mysql_subject_info.subjectLogoPath = subject_logo_path
-        mysql_subject_info.subjectDescription = subject_description
-
-        # response_json["data"].append({
-        #         "id": subject_id,
-        #         "name": subject_name,
-        #         "logoPath": subject_logo_path,
-        #         "description": subject_description,
-        #         "status": 1,
-        #     })
-
+    elif mysql_subject.subjectName != subject_name or mysql_subject.subjectLogoPath!=subject_logo_path or mysql_subject.subjectDescription!=subject_description:
+        mysql_subject.subjectName = subject_name
+        mysql_subject.subjectLogoPath = subject_logo_path
+        mysql_subject.subjectDescription = subject_description
         mysqlpool.session.commit()
-    # 如果数据无
+        # 如果数据无
     else:
         new_subject_info = model_mysql_subject(
 
@@ -125,6 +114,30 @@ def key_subject_put():
         )
         mysqlpool.session.add(new_subject_info)
         mysqlpool.session.commit()
+
+        # 查询项目更新后信息
+    try:
+        mysql_subject_info = model_mysql_subject.query.filter(
+                model_mysql_subject.subjectId == subject_id
+            ).first()
+        response_json["data"].update({
+                "id": mysql_subject_info.subjectId,
+                "name": mysql_subject_info.subjectName,
+                "logoPath": mysql_subject_info.subjectLogoPath,
+                "description": mysql_subject_info.subjectDescription,
+                "status": mysql_subject_info.subjectStatus,
+            })
+
+
+    except Exception as e:
+        api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
+        return route.error_msgs[500]['msg_db_error']
+    else:
+        if mysql_subject_info is None:
+            return route.error_msgs[201]['msg_no_subject']
+
+
+
 
     # 最后返回内容
     return response_json
