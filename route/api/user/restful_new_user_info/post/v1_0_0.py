@@ -85,7 +85,6 @@ def new_user_info_post():
         # 在库中插入账户未激活的信息
         # 先插入mysql
         newuser = model_mysql_userinfo(
-            userLoginName='',
             userEmail=requestvalue_mail,
             userStatus=0,
             userAddTime=datetime.datetime.now()
