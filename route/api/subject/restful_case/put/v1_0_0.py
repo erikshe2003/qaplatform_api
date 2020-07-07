@@ -33,7 +33,7 @@ from model.mysql import model_mysql_subject
     ['subjectDescription', str, 0, 200]
 )
 
-def key_subject_put():
+def key_case_put():
     # 初始化返回内容
     response_json = {
     "code": 200,
