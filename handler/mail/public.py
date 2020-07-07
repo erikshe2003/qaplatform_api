@@ -273,12 +273,7 @@ class PublicMailer:
                             <div style="margin-top: 10px;padding-bottom: 10px;
                             color: darkgrey;text-align: right;">
                                 <div style="margin-right: 20px;font-size: 12px;">
-                                    本条消息发送自极课自动化测试平台
-                                    <svg id="platform_logo" viewBox="0 0 60 60">
-                                        <path id="platform_logo_left" d="M 10 0 L 20 0 L 13 40 L 3 40 Z"></path>
-                                        <path id="platform_logo_center" d="M 26 20 L 36 20 L 32 40 L 22 40 Z"></path>
-                                        <path id="platform_logo_right" d="M 45 20 L 55 20 L 47 60 L 37 60 Z"></path>
-                                    </svg>
+                                    本条消息发送自%s测试平台
                                 </div>
                             </div>
                         </div>
@@ -292,7 +287,8 @@ class PublicMailer:
                 parse.quote(old),
                 parse.quote(new),
                 parse.quote(code),
-                str(operationid)
+                str(operationid),
+                appconfig.get('org', 'abbreviation'),
             )
             # 装载消息
             # 添加根MIME
@@ -302,7 +298,10 @@ class PublicMailer:
             # 初始化邮件接收人
             msg['To'] = Header(new, 'utf-8')
             # 初始化邮件主题
-            msg['Subject'] = Header('极课自动化测试平台-修改绑定邮箱', 'utf-8')
+            msg['Subject'] = Header(
+                '%s测试平台-账号注册' % appconfig.get('org', 'abbreviation'),
+                'utf-8'
+            )
             # 发送
             result_flag, result_type = self.__send(new, msg)
             logmsg = "给" + new + "发送来自" + old + "的修改绑定邮箱申请邮件结束"
@@ -364,12 +363,7 @@ class PublicMailer:
                             <div style="margin-top: 10px;padding-bottom: 10px;
                             color: darkgrey;text-align: right;">
                                 <div style="margin-right: 20px;font-size: 12px;">
-                                    本条消息发送自极课自动化测试平台
-                                    <svg id="platform_logo" viewBox="0 0 60 60">
-                                        <path id="platform_logo_left" d="M 10 0 L 20 0 L 13 40 L 3 40 Z"></path>
-                                        <path id="platform_logo_center" d="M 26 20 L 36 20 L 32 40 L 22 40 Z"></path>
-                                        <path id="platform_logo_right" d="M 45 20 L 55 20 L 47 60 L 37 60 Z"></path>
-                                    </svg>
+                                    本条消息发送自%s测试平台
                                 </div>
                             </div>
                         </div>
@@ -380,6 +374,7 @@ class PublicMailer:
                 appconfig.get("web", "http") + "://" +
                 appconfig.get("web", "host") + ":" +
                 appconfig.get("web", "port") + appconfig.get("web_url", "login"),
+                appconfig.get('org', 'abbreviation'),
             )
             # 装载消息
             # 添加根MIME
@@ -389,7 +384,10 @@ class PublicMailer:
             # 初始化邮件接收人
             msg['To'] = Header(to, 'utf-8')
             # 初始化邮件主题
-            msg['Subject'] = Header('极课自动化测试平台-登陆密码修改成功', 'utf-8')
+            msg['Subject'] = Header(
+                '%s测试平台-账号注册' % appconfig.get('org', 'abbreviation'),
+                'utf-8'
+            )
             # 发送
             result_flag, result_type = self.__send(to, msg)
             logmsg = "给" + to + "发送重置密码成功邮件结束"
@@ -451,12 +449,7 @@ class PublicMailer:
                             <div style="margin-top: 10px;padding-bottom: 10px;
                             color: darkgrey;text-align: right;">
                                 <div style="margin-right: 20px;font-size: 12px;">
-                                    本条消息发送自极课自动化测试平台
-                                    <svg id="platform_logo" viewBox="0 0 60 60">
-                                        <path id="platform_logo_left" d="M 10 0 L 20 0 L 13 40 L 3 40 Z"></path>
-                                        <path id="platform_logo_center" d="M 26 20 L 36 20 L 32 40 L 22 40 Z"></path>
-                                        <path id="platform_logo_right" d="M 45 20 L 55 20 L 47 60 L 37 60 Z"></path>
-                                    </svg>
+                                    本条消息发送自%s测试平台
                                 </div>
                             </div>
                         </div>
@@ -467,6 +460,7 @@ class PublicMailer:
                 appconfig.get("web", "http") + "://" +
                 appconfig.get("web", "host") + ":" +
                 appconfig.get("web", "port") + appconfig.get("web_url", "login"),
+                appconfig.get('org', 'abbreviation'),
             )
             # 装载消息
             # 添加根MIME
@@ -476,7 +470,10 @@ class PublicMailer:
             # 初始化邮件接收人
             msg['To'] = Header(to, 'utf-8')
             # 初始化邮件主题
-            msg['Subject'] = Header('极课自动化测试平台-注册账号成功', 'utf-8')
+            msg['Subject'] = Header(
+                '%s测试平台-账号注册' % appconfig.get('org', 'abbreviation'),
+                'utf-8'
+            )
             # 发送
             result_flag, result_type = self.__send(to, msg)
             logmsg = "给" + to + "发送注册账号成功邮件结束"
@@ -538,12 +535,7 @@ class PublicMailer:
                             <div style="margin-top: 10px;padding-bottom: 10px;
                             color: darkgrey;text-align: right;">
                                 <div style="margin-right: 20px;font-size: 12px;">
-                                    本条消息发送自极课自动化测试平台
-                                    <svg id="platform_logo" viewBox="0 0 60 60">
-                                        <path id="platform_logo_left" d="M 10 0 L 20 0 L 13 40 L 3 40 Z"></path>
-                                        <path id="platform_logo_center" d="M 26 20 L 36 20 L 32 40 L 22 40 Z"></path>
-                                        <path id="platform_logo_right" d="M 45 20 L 55 20 L 47 60 L 37 60 Z"></path>
-                                    </svg>
+                                    本条消息发送自%s测试平台
                                 </div>
                             </div>
                         </div>
@@ -554,6 +546,7 @@ class PublicMailer:
                 appconfig.get("web", "http") + "://" +
                 appconfig.get("web", "host") + ":" +
                 appconfig.get("web", "port") + appconfig.get("web_url", "login"),
+                appconfig.get('org', 'abbreviation'),
             )
             # 装载消息
             # 添加根MIME
@@ -563,7 +556,10 @@ class PublicMailer:
             # 初始化邮件接收人
             msg['To'] = Header(to, 'utf-8')
             # 初始化邮件主题
-            msg['Subject'] = Header('极课自动化测试平台-修改绑定邮箱成功', 'utf-8')
+            msg['Subject'] = Header(
+                '%s测试平台-账号注册' % appconfig.get('org', 'abbreviation'),
+                'utf-8'
+            )
             # 发送
             result_flag, result_type = self.__send(to, msg)
             logmsg = "给" + to + "发送绑定邮箱修改成功邮件结束"
