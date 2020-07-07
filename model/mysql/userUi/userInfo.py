@@ -21,7 +21,7 @@ class UserInfo(mysqlpool.Model):
         name="userLoginName",
         type_=VARCHAR(100),
         unique=True,
-        nullable=False
+        nullable=True
     )
     userNickName = mysqlpool.Column(
         name="userNickName",
