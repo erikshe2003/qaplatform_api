@@ -27,7 +27,9 @@ from model.mysql import model_mysql_functionorg
 # 201请求错误/301传参非法/500系统异常
 error_msgs = {
     201: {
-        'msg_no_case': {"error_code": 201, "error_msg": "用例不存在", "data": {}},
+
+        'msg_exit_depository': {"error_code": 201, "error_msg": "仓库已存在", "data": {}},
+        'msg_no_depository': {"error_code": 201, "error_msg": "仓库不存在", "data": {}},
         'msg_exit_catalogue': {"error_code": 201, "error_msg": "目录已存在", "data": {}},
         'msg_no_catalogue': {"error_code": 201, "error_msg": "目录不存在", "data": {}},
         'msg_exit_subject': {"error_code": 201, "error_msg": "项目已存在", "data": {}},
