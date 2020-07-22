@@ -40,7 +40,8 @@ from route.api.subjects import api_subjects
 automation.register_blueprint(api_subjects, url_prefix="/api/subjects")
 from route.api.depository import api_depository
 automation.register_blueprint(api_depository, url_prefix="/api/depository")
-
+from route.api.project import api_project
+automation.register_blueprint(api_project, url_prefix="/api/project")
 
 from route.socket.test import ws_test
 sockets.register_blueprint(ws_test, url_prefix="/ws/test")
