@@ -19,6 +19,8 @@ from .userUi.subjectCaseCatalogue import subjectCaseCatalogue
 from .userUi.subjectCase import subjectCase
 from .userUi.subjectCaseStep import subjectCaseStep
 from .userUi.depository import depository
+from .userUi.project import project
+from .userUi.projectMember import projectMember
 from .userUi.subjectCasePrecondition import subjectCasePrecondition
 from handler.log import sys_logger
 
@@ -47,6 +49,8 @@ try:
     model_mysql_casestep = subjectCaseStep
     model_mysql_caseprecondition = subjectCasePrecondition
     model_mysql_depository = depository
+    model_mysql_project = project
+    model_mysql_projectMember = projectMember
 
 
     logmsg = "系统初始化|mysql数据库模型初始化成功"

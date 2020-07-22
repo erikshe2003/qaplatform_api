@@ -77,7 +77,7 @@ def key_depository_post():
         return route.error_msgs[201]['msg_no_auth']
 
 
-    # 查询项目名称是否存在
+    # 查询名称是否存在
     try:
         mysql_depository = model_mysql_depository.query.filter(
             model_mysql_depository.name == depository_name
