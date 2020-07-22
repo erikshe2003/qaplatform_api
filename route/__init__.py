@@ -28,6 +28,7 @@ from model.mysql import model_mysql_functionorg
 error_msgs = {
     201: {
 
+        'msg_no_projectmember': {"error_code": 201, "error_msg": "项目成员不存在", "data": {}},
         'msg_no_project': {"error_code": 201, "error_msg": "项目不存在", "data": {}},
         'msg_exit_project': {"error_code": 201, "error_msg": "项目已存在", "data": {}},
         'msg_exit_depository': {"error_code": 201, "error_msg": "仓库已存在", "data": {}},
