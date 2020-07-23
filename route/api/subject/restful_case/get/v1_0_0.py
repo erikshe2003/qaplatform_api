@@ -7,9 +7,9 @@ import route
 
 from handler.log import api_logger
 
-from model.mysql import model_mysql_case
-from model.mysql import model_mysql_casestep
-from model.mysql import model_mysql_caseprecondition
+from model.mysql import model_mysql_subjectcase
+from model.mysql import model_mysql_subjectcasestep
+from model.mysql import model_mysql_subjectcaseprecondition
 """
     获取个人测试计划基础信息-api路由
     ----校验
@@ -57,8 +57,8 @@ def key_case_get():
 
     # 查询case基础信息
     try:
-        mysql_case_info = model_mysql_case.query.filter(
-            model_mysql_case.caseId == case_id
+        mysql_case_info = model_mysql_subjectcase.query.filter(
+            model_mysql_subjectcase.caseId == case_id
         ).first()
     except Exception as e:
         api_logger.error("model_mysql_subjectinfo数据读取失败，失败原因：" + repr(e))
@@ -76,8 +76,8 @@ def key_case_get():
 
     # 查询caseprecondition基础信息
     try:
-        mysql_casesteps = model_mysql_caseprecondition.query.filter(
-                model_mysql_caseprecondition.caseId == case_id
+        mysql_casesteps = model_mysql_subjectcaseprecondition.query.filter(
+                model_mysql_subjectcaseprecondition.caseId == case_id
             ).first()
     except Exception as e:
             api_logger.error("model_mysql_subjectinfo数据读取失败，失败原因：" + repr(e))
