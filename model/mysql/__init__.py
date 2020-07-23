@@ -46,9 +46,9 @@ try:
     model_mysql_tablesnap = TableSnap
     model_mysql_subject = subject
     model_mysql_catalogue = subjectCaseCatalogue
-    model_mysql_case = subjectCase
-    model_mysql_casestep = subjectCaseStep
-    model_mysql_caseprecondition = subjectCasePrecondition
+    model_mysql_subjectcase = subjectCase
+    model_mysql_subjectcasestep = subjectCaseStep
+    model_mysql_subjectcaseprecondition = subjectCasePrecondition
     model_mysql_depository = depository
     model_mysql_project = project
     model_mysql_projectMember = projectMember
