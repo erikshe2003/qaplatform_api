@@ -10,6 +10,7 @@ from handler.log import api_logger
 
 from model.mysql import model_mysql_project
 from model.mysql import model_mysql_projectMember
+from model.mysql import model_mysql_userinfo
 """
     获取个人测试计划基础信息-api路由
     ----校验
@@ -19,7 +20,8 @@ from model.mysql import model_mysql_projectMember
             校验传参
     ----操作
             判断测试项目是否存在
-            添加项目成员
+            判断成员是否存在/曾经存在更新状态
+            添加项目新成员
 """
 
 
@@ -59,18 +61,33 @@ def key_projectmember_put():
 
             return route.error_msgs[201]['msg_no_project']
 
-    # print(request_user_id)
-    # print(project_id)
-    print(projectmembers_id)
+    #批量添加成员
     member=projectmembers_id.split(',')
     for x in member:
-        print(x)
-        # 查询用户是否已经存在名称是否存在
+
+        # 查询用户是否存在且合法
+        try:
+            mysql_user_info = model_mysql_userinfo.query.filter(
+                model_mysql_userinfo.userId == int(x),model_mysql_userinfo.userStatus==1
+            ).first()
+
+        except Exception as e:
+
+            api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
+            return route.error_msgs[500]['msg_db_error']
+        else:
+            if mysql_user_info is None:
+                continue
+            else:
+                pass
+
+
+        # 查询用户是否已经是项目成员
         try:
             mysql_projectMember_info= model_mysql_projectMember.query.filter(
-                model_mysql_projectMember.id == project_id, model_mysql_projectMember.userId == int(x)
+                model_mysql_projectMember.projectId == project_id, model_mysql_projectMember.userId == int(x)
             ).first()
-            print(mysql_projectMember_info)
+
         except Exception as e:
             api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
             return route.error_msgs[500]['msg_db_error']
@@ -87,22 +104,8 @@ def key_projectmember_put():
                 mysqlpool.session.add(new_projectMember_info)
                 mysqlpool.session.commit()
             else:
-                print('xx')
                 mysql_projectMember_info.status=1
                 mysqlpool.session.commit()
-
-
-
-
-
-
-
-        # else:
-        #     mysql_project.name=project_name
-        #     mysql_project.description=project_description
-        #     mysql_project.coverOssPath=project_coverOssPath
-        #     mysqlpool.session.commit()
-
 
 
     # 最后返回内容
