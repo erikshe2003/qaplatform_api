@@ -20,7 +20,7 @@ from model.mysql import model_mysql_userinfo
     ----操作
             判断项目是否存在
             获取项目成员（支持keyword搜索）
-            返回测试仓库基础信息
+            返回基础信息
 """
 
 
@@ -45,7 +45,7 @@ def key_projectmember_get():
     project_id = flask.request.args['id']
 
     keyword = flask.request.args['nickname']
-    print(keyword)
+
     # 查询项目基础信息
     try:
         mysql_project_info = model_mysql_project.query.filter(
