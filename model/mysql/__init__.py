@@ -22,6 +22,10 @@ from .userUi.depository import depository
 from .userUi.project import project
 from .userUi.projectMember import projectMember
 from .userUi.case import case
+from .userUi.casePrecondition import casePrecondition
+from .userUi.caseStep import caseStep
+from .userUi.caseFile import caseFile
+from .userUi.caseEditLog import caseEditLog
 from .userUi.subjectCasePrecondition import subjectCasePrecondition
 from handler.log import sys_logger
 
@@ -53,6 +57,11 @@ try:
     model_mysql_project = project
     model_mysql_projectMember = projectMember
     model_mysql_case =  case
+    model_mysql_casePrecondition = casePrecondition
+    model_mysql_caseStep = caseStep
+    model_mysql_caseFile = caseFile
+    model_mysql_caseEditLog = caseEditLog
+
 
 
     logmsg = "系统初始化|mysql数据库模型初始化成功"
