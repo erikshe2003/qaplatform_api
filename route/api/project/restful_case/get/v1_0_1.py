@@ -117,7 +117,8 @@ def key_case_get():
                 response_json['data']['caseStep'].append({
                     "id":mqti.id,
                     "content":mqti.content,
-                    "expectation":mqti.expectation
+                    "expectation":mqti.expectation,
+                    "index":mqti.index
                 })
 
     return response_json

@@ -27,7 +27,7 @@ from model.mysql import model_mysql_functionorg
 # 201请求错误/301传参非法/500系统异常
 error_msgs = {
     201: {
-
+        'msg_no_casestep': {"error_code": 201, "error_msg": "测试步骤不存在", "data": {}},
         'msg_case_exit': {"error_code": 201, "error_msg": "同名用例已存在", "data": {}},
         'msg_column_cannot_operate': {"error_code": 201, "error_msg": "顶级目录不可操作", "data": {}},
         'msg_no_projectmember': {"error_code": 201, "error_msg": "项目成员不存在", "data": {}},

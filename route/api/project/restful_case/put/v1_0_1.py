@@ -47,6 +47,7 @@ from model.mysql import model_mysql_caseStep
 )
 
 def key_case_put():
+    index=0
     # 初始化返回内容
     response_json = {
     "code": 200,
@@ -79,7 +80,7 @@ def key_case_put():
             return route.error_msgs[201]['msg_no_case']
 
 
-    # 查目录是否存在
+    # 查目录是否存在，更新目录
     try:
         mysql_column = model_mysql_case.query.filter(
             model_mysql_case.id == case_columnId,model_mysql_case.type==1,model_mysql_case.status==1
@@ -90,8 +91,7 @@ def key_case_put():
     else:
         if mysql_column is None:
             return route.error_msgs[201]['msg_no_catalogue']
-        else:
-            pass
+
 
     #判断必输项title、front_case和level必传
     if len(case_title)==0:
@@ -103,23 +103,23 @@ def key_case_put():
 
 
 
-    #插入用例主数据
+    #更新用例主数据
     if front_case==0:
         index=1
-        indexchang(index, case_columnId)
-        new_case_info = model_mysql_case(
+        #判断目录是否改变
+        if mysql_caseinfo.columnId==case_columnId:
+            indexchang2(mysql_caseinfo.index, case_columnId)
+            mysql_caseinfo.index = 0
+            mysqlpool.session.commit()
+            indexchang(index, case_columnId)
+        else:
+            indexchang(index, case_columnId)
 
-            title=case_title,
-            columnId=case_columnId,
-            projectId=mysql_column.projectId,
-            index=index,
-            level=case_level,
-            type=2,
-            status=1,
-            userId=request_user_id
+        mysql_caseinfo.index=1
+        mysql_caseinfo.title=case_title
+        mysql_caseinfo.level=case_level
+        mysql_caseinfo.columnId = case_columnId
 
-        )
-        mysqlpool.session.add(new_case_info)
         mysqlpool.session.commit()
     else:
         try:
@@ -133,38 +133,29 @@ def key_case_put():
             if mysql_front is None:
                 return route.error_msgs[201]['msg_no_case']
             else:
+                #*************需要解决往下拖的问题，往上托目前没问题
                 index=mysql_front.index+1
-                indexchang(index,case_columnId)
-                new_case_info = model_mysql_case(
 
-                    title=case_title,
-                    columnId=case_columnId,
-                    projectId=mysql_column.projectId,
-                    index=index,
-                    level=case_level,
-                    type=2,
-                    status=1,
-                    userId=request_user_id
+                if mysql_caseinfo.columnId == case_columnId:
+                    indexchang2(mysql_caseinfo.index, case_columnId)
+                    mysql_caseinfo.index=0
+                    mysqlpool.session.commit()
+                    indexchang(index, case_columnId)
+                else:
+                    indexchang(index, case_columnId)
 
-                )
-                mysqlpool.session.add(new_case_info)
+                mysql_caseinfo.index = index
+                mysql_caseinfo.title = case_title
+                mysql_caseinfo.level = case_level
+                mysql_caseinfo.columnId = case_columnId
+
                 mysqlpool.session.commit()
 
-    # 获取用例id
-    try:
-        mysql_case_info = model_mysql_case.query.filter(
-                model_mysql_case.title == case_title, model_mysql_case.type == 2, model_mysql_case.status == 1,model_mysql_case.index==index
-            ).first()
-    except Exception as e:
-        api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
-        return route.error_msgs[500]['msg_db_error']
-    else:
-        if mysql_case_info is None:
-            return route.error_msgs[201]['msg_no_case']
 
-    precondition(mysql_case_info.id, case_precondition)
-    ossPath(mysql_case_info, oss_path, request_user_id)
-    casestep(mysql_case_info.id, case_step, request_user_id)
+
+    precondition(mysql_caseinfo.id, case_precondition)
+    ossPath(mysql_caseinfo.id, oss_path, request_user_id)
+    casestep(mysql_caseinfo.id, case_step, request_user_id)
 
 
     # 最后返回内容
@@ -188,56 +179,183 @@ def indexchang(index,columnId):
             for mqti in back_case:
                 mqti.index += 1
                 mysqlpool.session.commit()
+#改变后续的排序
+def indexchang2(index,columnId):
+    # 将后面的用例index+1
+    try:
+        back_case = model_mysql_case.query.filter(
+            model_mysql_case.index >= index, model_mysql_case.type == 2, model_mysql_case.status == 1,
+            model_mysql_case.columnId == columnId
+        ).all()
+    except Exception as e:
+        api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
+        return route.error_msgs[500]['msg_db_error']
+    else:
+        if back_case is None:
+            pass
+        else:
+            for mqti in back_case:
+                mqti.index -= 1
+                mysqlpool.session.commit()
 
 def precondition(caseid,case_precondition):
-    #插入前置条件
-    if len(case_precondition)==0:
-        pass
+    #更新分多种场景
+    try:
+        case_Precondition = model_mysql_casePrecondition.query.filter(
+            model_mysql_casePrecondition.caseId== caseid
+        ).first()
+    except Exception as e:
+        api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
+        return route.error_msgs[500]['msg_db_error']
     else:
-        new_casePrecondition_info = model_mysql_casePrecondition(
-            content=case_precondition,
-            caseId=caseid
-        )
-        mysqlpool.session.add(new_casePrecondition_info)
-        mysqlpool.session.commit()
+        #原来为空，现在也为空不更新，现在非空则插入数据
+        if case_Precondition is None:
+            if len(case_precondition)==0:
+                pass
+            else:
+                new_casePrecondition_info = model_mysql_casePrecondition(
+                    content=case_precondition,
+                    caseId=caseid
+                )
+                mysqlpool.session.add(new_casePrecondition_info)
+                mysqlpool.session.commit()
+        else:
+            #原来不为空，现在为空/非空直接更新即可
+            case_Precondition.content=case_precondition
+            mysqlpool.session.commit()
+
 
 def ossPath(caseid,oss_path,userID):
     # 插入附件oss地址
-    if len(oss_path) == 0:
-        pass
+    try:
+        case_caseFile = model_mysql_caseFile.query.filter(
+            model_mysql_caseFile.caseId== caseid
+        ).first()
+    except Exception as e:
+        api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
+        return route.error_msgs[500]['msg_db_error']
     else:
-        new_caseFile_info = model_mysql_caseFile(
-            ossPath=oss_path,
-            caseId=caseid,
-            status=1,
-            userId=userID
-
-        )
-        mysqlpool.session.add(new_caseFile_info)
-        mysqlpool.session.commit()
-
-
-
-def casestep(caseid,case_step,userID):
-    #插入测试步骤
-    #这里一定要注意传入数组的参数中千万不能有空格，否则会死都查不出为啥会错，python的json方法无法解析，postman居然可以识别。
-
-    if len(case_step)==0:
-        pass
-    else:
-        try:
-            for x in case_step:
-                new_caseStep_info = model_mysql_caseStep(
-                    index=x['index'],
+        #原来为空，现在也为空不更新，现在非空则插入数据
+        if case_caseFile is None:
+            if len(oss_path) == 0:
+                pass
+            else:
+                new_caseFile_info = model_mysql_caseFile(
+                    ossPath=oss_path,
                     caseId=caseid,
-                    content=x['content'],
-                    expectation=x['expectation'],
                     status=1,
                     userId=userID
 
                 )
-                mysqlpool.session.add(new_caseStep_info)
+                mysqlpool.session.add(new_caseFile_info)
                 mysqlpool.session.commit()
-        except Exception as e:
-            api_logger.error("测试数据读取失败，失败原因：" + repr(e))
-            return route.error_msgs[500]['msg_db_error']
+        else:
+            #原来不为空，现在为空/非空直接更新即可
+            if len(oss_path) == 0:
+                case_caseFile.status = -1
+                mysqlpool.session.commit()
+            else:
+                case_caseFile.ossPath=oss_path
+                mysqlpool.session.commit()
+
+
+
+
+def casestep(caseid,case_step,userID):
+    lists=[]
+    #插入测试步骤
+    #这里一定要注意传入数组的参数中千万不能有空格，否则会死都查不出为啥会错，python的json方法无法解析，postman居然可以识别。
+    try:
+        case_caseStep = model_mysql_caseStep.query.filter(
+            model_mysql_caseStep.caseId == caseid,model_mysql_caseStep.status==1
+        ).all()
+
+    except Exception as e:
+        api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
+        return route.error_msgs[500]['msg_db_error']
+    else:
+        # 原来为空
+        if len(case_caseStep)==0:
+
+            #现在也为空
+            if len(case_step) == 0:
+                pass
+            #现在不为空
+            else:
+                try:
+                    for x in case_step:
+                        new_caseStep_info = model_mysql_caseStep(
+                            index=x['index'],
+                            caseId=caseid,
+                            content=x['content'],
+                            expectation=x['expectation'],
+                            status=1,
+                            userId=userID
+                        )
+                        mysqlpool.session.add(new_caseStep_info)
+                        mysqlpool.session.commit()
+                except Exception as e:
+                    api_logger.error("测试数据读取失败，失败原因：" + repr(e))
+                    return route.error_msgs[500]['msg_db_error']
+        #原来数据不为空
+        else:
+            #现在数据为空
+
+            if len(case_step) == 0:
+                for x in case_caseStep:
+                    x.status=-1
+                    x.updateUserId=userID
+                    mysqlpool.session.commit()
+
+                # 现在不为空
+            else:
+                #修改用例需要穿step-id
+                try:
+                    for x in case_step:
+                        lists.append(x['id'])
+                        if (x['id']) == 0:
+                            new_caseStep_info = model_mysql_caseStep(
+                                index=x['index'],
+                                caseId=caseid,
+                                content=x['content'],
+                                expectation=x['expectation'],
+                                status=1,
+                                userId=userID
+                            )
+                            mysqlpool.session.add(new_caseStep_info)
+                            mysqlpool.session.commit()
+                        else:
+                            try:
+                                case_caseStep_info = model_mysql_caseStep.query.filter(
+                                    model_mysql_caseStep.id == x['id'], model_mysql_caseStep.caseId == caseid
+                                ).first()
+                            except  Exception as e:
+                                api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
+                                return route.error_msgs[500]['msg_db_error']
+                            else:
+                                if case_caseStep_info is None:
+                                    return route.error_msgs[201]['msg_no_casestep']
+                                else:
+                                    case_caseStep_info.index = x['index']
+                                    case_caseStep_info.content = x['content']
+                                    case_caseStep_info.expectation = x['expectation']
+                                    case_caseStep_info.status = 1
+                                    case_caseStep_info.updateUserId = userID
+                                    mysqlpool.session.commit()
+
+
+                except  Exception as e:
+                    api_logger.error("读取失败，失败原因：" + repr(e))
+                    return route.error_msgs[301]['msg_request_params_illegal']
+                #踢出本次删除的步骤
+                try:
+                    for x in case_caseStep:
+                        if x.id not in lists:
+                            x.status = -1
+                            x.updateUserId = userID
+                            mysqlpool.session.commit()
+                        else:
+                            pass
+                except Exception as e:
+                    api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
+                    return route.error_msgs[500]['msg_db_error']
