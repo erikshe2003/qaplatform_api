@@ -83,3 +83,13 @@ class case(mysqlpool.Model):
         nullable=False,
         default=datetime.datetime.now
     )
+    veri = mysqlpool.Column(
+        name="veri",
+        type_=TINYINT(4),
+        nullable=True
+    )
+    arch = mysqlpool.Column(
+        name="arch",
+        type_=TINYINT(4),
+        nullable=True
+    )
