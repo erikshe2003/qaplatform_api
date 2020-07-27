@@ -140,6 +140,16 @@ def key_case_put():
                     indexchang2(mysql_caseinfo.index, case_columnId)
                     mysql_caseinfo.index=0
                     mysqlpool.session.commit()
+                    #重新获取前一个case的排序
+                    try:
+                        mysql_front = model_mysql_case.query.filter(
+                            model_mysql_case.id == front_case, model_mysql_case.type == 2, model_mysql_case.status == 1
+                        ).first()
+                    except Exception as e:
+                        api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
+                        return route.error_msgs[500]['msg_db_error']
+                    index = mysql_front.index + 1
+
                     indexchang(index, case_columnId)
                 else:
                     indexchang(index, case_columnId)
