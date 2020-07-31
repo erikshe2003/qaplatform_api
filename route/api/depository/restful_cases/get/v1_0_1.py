@@ -47,7 +47,7 @@ def key_cases_get():
 
     cases_id=[]
     # 取出必传入参
-    request_user_id = flask.request.headers['UserId']
+
     depository_id = flask.request.args['depositoryId']
     column_id = flask.request.args['columnId']
     key_word = flask.request.args['keyWord']
