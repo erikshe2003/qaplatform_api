@@ -42,7 +42,7 @@ from model.mysql import model_mysql_caseStep
     ['level', int, 1, None],
     ['casePrecondition', str, None, None],
     ['caseStep', list, 0, None],
-    ['ossPath', str, None, None]
+    ['files', list, 0, None]
 
 )
 
@@ -64,7 +64,7 @@ def key_case_put():
     front_case = flask.request.json['frontCaseId']
     case_precondition = flask.request.json['casePrecondition']
     case_step = flask.request.json['caseStep']
-    oss_path = flask.request.json['ossPath']
+    files = flask.request.json['files']
 
 
     # 查用例是否存在
@@ -164,7 +164,7 @@ def key_case_put():
 
 
     precondition(mysql_caseinfo.id, case_precondition)
-    ossPath(mysql_caseinfo.id, oss_path, request_user_id)
+    ossPath(mysql_caseinfo.id, request_user_id,files)
     casestep(mysql_caseinfo.id, case_step, request_user_id)
 
 
@@ -235,38 +235,38 @@ def precondition(caseid,case_precondition):
             mysqlpool.session.commit()
 
 
-def ossPath(caseid,oss_path,userID):
-    # 插入附件oss地址
-    try:
-        case_caseFile = model_mysql_caseFile.query.filter(
-            model_mysql_caseFile.caseId== caseid
-        ).first()
-    except Exception as e:
-        api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
-        return route.error_msgs[500]['msg_db_error']
+def ossPath(caseid,userID,files):
+    if len(files) == 0:
+        pass
     else:
-        #原来为空，现在也为空不更新，现在非空则插入数据
-        if case_caseFile is None:
-            if len(oss_path) == 0:
-                pass
-            else:
+        # 需要前端返回附件的id和状态，无id的附件当做新增处理
+        for x in files:
+            if len(x['id']) == 0:
                 new_caseFile_info = model_mysql_caseFile(
-                    ossPath=oss_path,
+                    ossPath=x['ossPath'],
                     caseId=caseid,
                     status=1,
-                    userId=userID
+                    userId=userID,
+                    fileAlias=x['fileAlias']
 
                 )
                 mysqlpool.session.add(new_caseFile_info)
                 mysqlpool.session.commit()
-        else:
-            #原来不为空，现在为空/非空直接更新即可
-            if len(oss_path) == 0:
-                case_caseFile.status = -1
-                mysqlpool.session.commit()
             else:
-                case_caseFile.ossPath=oss_path
-                mysqlpool.session.commit()
+                try:
+                    case_file_info = model_mysql_caseFile.query.filter(
+                        model_mysql_caseFile.id == x['id']
+                    ).first()
+                except Exception as e:
+                    api_logger.error("读取失败，失败原因：" + repr(e))
+                    return route.error_msgs[500]['msg_db_error']
+                else:
+                    if case_file_info is None:
+                        pass
+                    else:
+                        case_file_info.status = x['status']
+                        case_file_info.userId = userID
+                        mysqlpool.session.commit()
 
 
 

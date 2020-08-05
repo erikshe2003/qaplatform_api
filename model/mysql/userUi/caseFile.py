@@ -25,13 +25,13 @@ class caseFile(mysqlpool.Model):
 
     ossPath = mysqlpool.Column(
         name="ossPath",
-        type_=TEXT(1000),
+        type_=VARCHAR(200),
         nullable=False
     )
 
     fileAlias = mysqlpool.Column(
         name="fileAlias",
-        type_=TEXT(1000),
+        type_=VARCHAR(200),
         nullable=True
     )
     status = mysqlpool.Column(
