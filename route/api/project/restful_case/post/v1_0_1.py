@@ -12,6 +12,7 @@ from model.mysql import model_mysql_casePrecondition
 from model.mysql import model_mysql_case
 from model.mysql import model_mysql_caseFile
 from model.mysql import model_mysql_caseStep
+from model.mysql import model_mysql_caseEditLog
 """
     获取个人测试计划基础信息-api路由
     ----校验
@@ -165,6 +166,14 @@ def key_case_post():
     precondition(mysql_case_info.id, case_precondition)
     ossPath(mysql_case_info.id, request_user_id,files)
     casestep(mysql_case_info.id, case_step, request_user_id)
+
+    #添加日志
+    case_logs=model_mysql_caseEditLog(
+        caseId=mysql_case_info.id,
+        type=1
+    )
+    mysqlpool.session.add(case_logs)
+    mysqlpool.session.commit()
 
 
     # 最后返回内容

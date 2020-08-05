@@ -8,10 +8,9 @@ from handler.pool import mysqlpool
 
 from handler.log import api_logger
 
-from model.mysql import model_mysql_casePrecondition
+from model.mysql import model_mysql_caseEditLog
 from model.mysql import model_mysql_case
-from model.mysql import model_mysql_caseFile
-from model.mysql import model_mysql_caseStep
+
 """
     获取个人测试计划基础信息-api路由
     ----校验
@@ -62,6 +61,16 @@ def key_case_delete():
             mysql_case_info.status=-1
             mysql_case_info.updateUserId=request_user_id
             mysql_case_info.index = 0
+            mysqlpool.session.commit()
+
+            # 添加日志
+
+            case_logs = model_mysql_caseEditLog(
+                caseId=mysql_case_info.id,
+                type=7
+
+            )
+            mysqlpool.session.add(case_logs)
             mysqlpool.session.commit()
 
 

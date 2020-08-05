@@ -12,6 +12,7 @@ from model.mysql import model_mysql_casePrecondition
 from model.mysql import model_mysql_case
 from model.mysql import model_mysql_caseFile
 from model.mysql import model_mysql_caseStep
+from model.mysql import model_mysql_caseEditLog
 """
     获取个人测试计划基础信息-api路由
     ----校验
@@ -78,6 +79,8 @@ def key_case_put():
     else:
         if mysql_caseinfo is None:
             return route.error_msgs[201]['msg_no_case']
+        else:
+            before_title=mysql_caseinfo.title
 
 
     # 查目录是否存在，更新目录
@@ -167,6 +170,20 @@ def key_case_put():
     ossPath(mysql_caseinfo.id, request_user_id,files)
     casestep(mysql_caseinfo.id, case_step, request_user_id)
 
+    # 添加日志
+
+    if before_title==case_title:
+        pass
+    else:
+        case_logs = model_mysql_caseEditLog(
+            caseId=mysql_caseinfo.id,
+            type=2,
+            before=before_title,
+            after=case_title
+        )
+        mysqlpool.session.add(case_logs)
+        mysqlpool.session.commit()
+
 
     # 最后返回内容
     return response_json
@@ -241,7 +258,7 @@ def ossPath(caseid,userID,files):
     else:
         # 需要前端返回附件的id和状态，无id的附件当做新增处理
         for x in files:
-            if len(x['id']) == 0:
+            if x['id'] == 0:
                 new_caseFile_info = model_mysql_caseFile(
                     ossPath=x['ossPath'],
                     caseId=caseid,
@@ -252,6 +269,28 @@ def ossPath(caseid,userID,files):
                 )
                 mysqlpool.session.add(new_caseFile_info)
                 mysqlpool.session.commit()
+
+                #获取id
+                try:
+                    case_file = model_mysql_caseFile.query.filter(
+                        model_mysql_caseFile.caseId == caseid,model_mysql_caseFile.ossPath==x['ossPath']
+                    ).first()
+                except Exception as e:
+                    api_logger.error("读取失败，失败原因：" + repr(e))
+                    return route.error_msgs[500]['msg_db_error']
+                else:
+                    if case_file is None:
+                        pass
+                    else:
+                        # 添加日志
+                        case_logs = model_mysql_caseEditLog(
+                            caseId=caseid,
+                            type=5,
+                            before=case_file.id
+                        )
+                        mysqlpool.session.add(case_logs)
+                        mysqlpool.session.commit()
+
             else:
                 try:
                     case_file_info = model_mysql_caseFile.query.filter(
@@ -267,9 +306,15 @@ def ossPath(caseid,userID,files):
                         case_file_info.status = x['status']
                         case_file_info.userId = userID
                         mysqlpool.session.commit()
-
-
-
+                        if x['status']==-1:
+                            # 添加日志
+                            case_logs = model_mysql_caseEditLog(
+                                caseId=caseid,
+                                type=6,
+                                before=case_file_info.id
+                            )
+                            mysqlpool.session.add(case_logs)
+                            mysqlpool.session.commit()
 
 def casestep(caseid,case_step,userID):
     lists=[]
@@ -346,11 +391,39 @@ def casestep(caseid,case_step,userID):
                                 if case_caseStep_info is None:
                                     return route.error_msgs[201]['msg_no_casestep']
                                 else:
+                                    before_content=case_caseStep_info.content
+                                    before_expectation=case_caseStep_info.expectation
+
                                     case_caseStep_info.index = x['index']
                                     case_caseStep_info.content = x['content']
                                     case_caseStep_info.expectation = x['expectation']
                                     case_caseStep_info.status = 1
                                     case_caseStep_info.updateUserId = userID
+                                    mysqlpool.session.commit()
+                                # 添加日志
+
+                                if before_content ==  x['content']:
+                                    pass
+                                else:
+                                    case_logs = model_mysql_caseEditLog(
+                                        caseId=caseid,
+                                        type=3,
+                                        before=before_content,
+                                        after=x['content']
+                                    )
+                                    mysqlpool.session.add(case_logs)
+                                    mysqlpool.session.commit()
+
+                                if before_expectation ==  x['expectation']:
+                                    pass
+                                else:
+                                    case_logs = model_mysql_caseEditLog(
+                                        caseId=caseid,
+                                        type=4,
+                                        before=before_expectation,
+                                        after=x['expectation']
+                                    )
+                                    mysqlpool.session.add(case_logs)
                                     mysqlpool.session.commit()
 
 
@@ -369,3 +442,4 @@ def casestep(caseid,case_step,userID):
                 except Exception as e:
                     api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
                     return route.error_msgs[500]['msg_db_error']
+
