@@ -33,21 +33,12 @@ from model.mysql import model_mysql_caseStep
     ['id', int, 1, None]
 )
 
-def key_case_get():
+def key_caseFiles_get():
     # 初始化返回内容
     response_json = {
     "code": 200,
     "msg": "数据获取成功",
-    "data": {
-        "id":0,
-        "columnId": None,
-        "title": None,
-        "index": None,
-        "level": None,
-        "casePrecondition": None,
-        "caseStep": [],
-        "ossPath": []
-    }
+    "data": []
    }
 
     # 取出必传入参
@@ -65,26 +56,8 @@ def key_case_get():
     else:
         if mysql_case_info is None:
             return route.error_msgs[201]['msg_no_case']
-        else:
-            response_json['data']['id'] =mysql_case_info.id
-            response_json['data']['columnId']=mysql_case_info.columnId
-            response_json['data']['title'] = mysql_case_info.title
-            response_json['data']['level'] = mysql_case_info.level
-            response_json['data']['index'] = mysql_case_info.index
 
-    #查询是否存在前置条件
-    try:
-        mysql_casePrecondition_info = model_mysql_casePrecondition.query.filter(
-            model_mysql_casePrecondition.caseId == case_id
-        ).first()
-    except Exception as e:
-        api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
-        return route.error_msgs[500]['msg_db_error']
-    else:
-        if mysql_casePrecondition_info is None:
-            pass
-        else:
-            response_json['data']['casePrecondition'] =mysql_casePrecondition_info.content
+
 
     #查询是否存在附件
     try:
@@ -99,32 +72,11 @@ def key_case_get():
             pass
         else:
             for x in mysql_caseFile_info:
-                response_json['data']['ossPath'].append({
+                response_json['data'].append({
                 "id":x.id,
                 "ossPath":x.ossPath,
                 "fileAlias":x.fileAlias
                 }
                 )
-
-    #查询是否存在测试步骤
-    try:
-        mysql_caseStep_info = model_mysql_caseStep.query.filter(
-            model_mysql_caseStep.caseId == case_id,model_mysql_caseStep.status==1
-        ).all()
-    except Exception as e:
-        api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
-        return route.error_msgs[500]['msg_db_error']
-    else:
-        if mysql_caseStep_info is None:
-            pass
-        else:
-            for mqti in mysql_caseStep_info:
-
-                response_json['data']['caseStep'].append({
-                    "id":mqti.id,
-                    "content":mqti.content,
-                    "expectation":mqti.expectation,
-                    "index":mqti.index
-                })
 
     return response_json
