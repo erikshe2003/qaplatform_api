@@ -11,6 +11,9 @@ from .project_column import projectcolumn
 from .case import case
 from .caseCopy import casecopy
 from .caseIndex import caseindex
+from .cases import cases
+
+
 api_project = Blueprint('api_project', __name__)
 
 api = Api(api_project)
@@ -25,3 +28,4 @@ api.add_resource(projectcolumn, '/column.json')
 api.add_resource(case, '/case.json')
 api.add_resource(casecopy, '/caseCopy.json')
 api.add_resource(caseindex, '/caseIndex.json')
+api.add_resource(cases, '/cases.json')
