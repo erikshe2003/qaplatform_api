@@ -42,7 +42,7 @@ from model.mysql import model_mysql_caseStep
     ['level', int, 1, None],
     ['casePrecondition', str, None, None],
     ['caseStep', list, 0, None],
-    ['ossPath', str, None, None]
+    ['files', list, 0, None],
 
 )
 
@@ -62,7 +62,8 @@ def key_case_post():
     front_case = flask.request.json['frontCaseId']
     case_precondition = flask.request.json['casePrecondition']
     case_step = flask.request.json['caseStep']
-    oss_path = flask.request.json['ossPath']
+    files = flask.request.json['files']
+
 
 
     # 查目录是否存在
@@ -162,7 +163,7 @@ def key_case_post():
             return route.error_msgs[201]['msg_no_case']
 
     precondition(mysql_case_info.id, case_precondition)
-    ossPath(mysql_case_info, oss_path, request_user_id)
+    ossPath(mysql_case_info.id, request_user_id,files)
     casestep(mysql_case_info.id, case_step, request_user_id)
 
 
@@ -200,20 +201,29 @@ def precondition(caseid,case_precondition):
         mysqlpool.session.add(new_casePrecondition_info)
         mysqlpool.session.commit()
 
-def ossPath(caseid,oss_path,userID):
+def ossPath(caseid,userID,files):
+
     # 插入附件oss地址
-    if len(oss_path) == 0:
+    if len(files) == 0:
         pass
     else:
-        new_caseFile_info = model_mysql_caseFile(
-            ossPath=oss_path,
-            caseId=caseid,
-            status=1,
-            userId=userID
+        for x in files:
 
-        )
-        mysqlpool.session.add(new_caseFile_info)
-        mysqlpool.session.commit()
+            new_caseFile_info = model_mysql_caseFile(
+                ossPath=x['ossPath'],
+                caseId=caseid,
+                status=1,
+                userId=userID,
+                fileAlias=x['fileAlias']
+
+            )
+
+            mysqlpool.session.add(new_caseFile_info)
+
+            mysqlpool.session.commit()
+
+
+
 
 
 
