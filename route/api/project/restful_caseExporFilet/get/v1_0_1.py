@@ -173,7 +173,7 @@ def key_caseExporFilet_get():
 def download(cases_info):
     header_list=cases_info
     excel = pd.DataFrame(header_list)#二维数组，对应表头的相应数据
-    excel.columns = ['编号','目录','标题','等级','前置条件','测试步骤','预期结果','附件']  #表头 [xx,xx,xx,xx]
+    excel.columns = ['用例编号','目录','标题','等级','前置条件','测试步骤','预期结果','附件']  #表头 [xx,xx,xx,xx]
 
     file = BytesIO()
     writer = pd.ExcelWriter(file, engine='xlsxwriter')
@@ -183,43 +183,29 @@ def download(cases_info):
 
     workbook = writer.book
     worksheet = writer.sheets['TestCase']
-    # Add a header format.
+    # 顶部
     header_format = workbook.add_format({
-        'bold': True,  # 字体加粗
-        'text_wrap': True,  # 是否自动换行
-        'valign': 'top',  # 垂直对齐方式
-        'align': 'right',  # 水平对齐方式
-        'fg_color': '#D7E4BC',  # 单元格背景颜色
-        'border': 2})  # 单元格边框宽度
+        'bold': True,
+        'text_wrap': True,
+        'valign': 'vcenter',
+        'align': 'top',
+        'fg_color': '#D7E4BC',
+        'border': 2,
+        'font_size':16})
+    #其他
     other_format = workbook.add_format({
-        'bold': False,  # 字体加粗
-        'text_wrap': True,  # 是否自动换行
-        'valign': 'top',  # 垂直对齐方式
-        'align': 'right',  # 水平对齐方式
-        'fg_color': '',  # 单元格背景颜色
-        'border': 2})  # 单元格边框宽度
-    yellow = workbook.add_format({'fg_color': '#FFEE99'})
-    green = workbook.add_format({'fg_color': '#2dB054'})
-
-    # Write the column headers with the defined format.
+        'bold': False,
+        'text_wrap': True,
+        'valign': 'vcenter',
+        'align': 'left',
+        'fg_color': '',
+        'border': 1})
     for col_num, value in enumerate(excel.columns.values):
-        if col_num % 2 == 0:
-            worksheet.write(0, col_num, value, header_format)
-        else:
             worksheet.write(0, col_num, value, header_format)
 
-    # Write the row with the defined format.
-    for index, value in excel.iterrows():
-        # print(index, " -- > ", value.values)
-        if index % 2 == 0:
-            worksheet.write(index + 1, 0, value[0], header_format)
-        else:
-            worksheet.write(index + 1, 0, value[0], yellow)
-
-    worksheet.set_column("A:C", 16)
-    format2 = workbook.add_format({'bold': True, 'align': 'vcenter', 'valign': 'top', 'text_wrap': True})
-    worksheet.set_row(0, cell_format=format2)
-    # Close the Pandas Excel writer and output the Excel file.
+    worksheet.set_column("A:H", 16 , other_format)
+    worksheet.set_row(0, cell_format=other_format)
+    # 注意记得将样式保存
     writer.save()
 
     response = Response(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
