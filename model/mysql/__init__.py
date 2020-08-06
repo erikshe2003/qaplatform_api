@@ -26,8 +26,11 @@ from .userUi.casePrecondition import casePrecondition
 from .userUi.caseStep import caseStep
 from .userUi.caseFile import caseFile
 from .userUi.caseEditLog import caseEditLog
+from .userUi.projectReviewRecord import projectReviewRecord
+
 from .userUi.subjectCasePrecondition import subjectCasePrecondition
 from handler.log import sys_logger
+
 
 
 logmsg = "系统初始化|准备初始化mysql数据库模型"
@@ -61,6 +64,7 @@ try:
     model_mysql_caseStep = caseStep
     model_mysql_caseFile = caseFile
     model_mysql_caseEditLog = caseEditLog
+    model_mysql_projectReviewRecord = projectReviewRecord
 
 
 
