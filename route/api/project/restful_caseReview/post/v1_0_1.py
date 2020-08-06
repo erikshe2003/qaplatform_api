@@ -53,13 +53,13 @@ def key_caseReview_post():
         return route.error_msgs[301]['msg_value_type_error']
     # 判断用例是否存在
     for case_id in id_list:
-        print(case_id)
+
         try:
             mysql_case_info = model_mysql_case.query.filter(
                 model_mysql_case.id == case_id,
                 model_mysql_case.type == 2,
                 model_mysql_case.status == 1,
-                model_mysql_case.arch==0
+                model_mysql_case.veri==0
             ).first()
         except Exception as e:
             api_logger.error("数据读取失败，失败原因：" + repr(e))
