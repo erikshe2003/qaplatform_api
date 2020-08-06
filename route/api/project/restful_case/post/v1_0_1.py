@@ -117,6 +117,8 @@ def key_case_post():
             level=case_level,
             type=2,
             status=1,
+            veri=0,
+            arch=0,
             userId=request_user_id
 
         )
@@ -145,6 +147,8 @@ def key_case_post():
                     level=case_level,
                     type=2,
                     status=1,
+                    veri=0,
+                    arch=0,
                     userId=request_user_id
 
                 )
