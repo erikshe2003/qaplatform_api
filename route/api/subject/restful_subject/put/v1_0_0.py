@@ -27,7 +27,7 @@ from model.mysql import model_mysql_subject
 @route.check_token
 @route.check_auth
 @route.check_post_parameter(
-    ['subjectId', int, 1, 4],
+    ['subjectId', int, 1, None],
     ['subjectName', str, 1, 50],
     ['subjectLogoPath', str, 0, 200],
     ['subjectDescription', str, 0, 200]

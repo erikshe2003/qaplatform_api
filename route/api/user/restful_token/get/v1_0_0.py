@@ -28,6 +28,7 @@ def token_get():
 
     # 取出传入参数值
     requestvalue_userid = int(flask.request.headers["UserId"])
+
     requestvalue_token = flask.request.args["user_token"]
 
     # 2.校验账户是否存在

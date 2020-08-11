@@ -17,7 +17,7 @@ from model.mysql import model_mysql_subject
             校验账户所属角色是否有API操作权限
             校验传参
     ----操作
-            判断测试项目是否存在
+           
             返回测试项目基础信息
 """
 
