@@ -14,7 +14,7 @@ from .userUi.taskInfo import TaskInfo
 from .userUi.taskAssign import TaskAssign
 from .userUi.workerInfo import WorkerInfo
 from .userUi.tableSnap import TableSnap
-
+from .userUi.subject import subject
 from handler.log import sys_logger
 
 
@@ -36,6 +36,7 @@ try:
     model_mysql_taskassign = TaskAssign
     model_mysql_workerinfo = WorkerInfo
     model_mysql_tablesnap = TableSnap
+    model_mysql_subject = subject
 
     logmsg = "系统初始化|mysql数据库模型初始化成功"
     sys_logger.debug(logmsg)
