@@ -27,6 +27,17 @@ from model.mysql import model_mysql_functionorg
 # 201请求错误/301传参非法/500系统异常
 error_msgs = {
     201: {
+        'msg_no_reviewrecode': {"error_code": 201, "error_msg": "评审记录不存在", "data": {}},
+        'msg_no_casestep': {"error_code": 201, "error_msg": "测试步骤不存在", "data": {}},
+        'msg_case_exit': {"error_code": 201, "error_msg": "同名用例已存在", "data": {}},
+        'msg_column_cannot_operate': {"error_code": 201, "error_msg": "顶级目录不可操作", "data": {}},
+        'msg_no_projectmember': {"error_code": 201, "error_msg": "项目成员不存在", "data": {}},
+        'msg_no_project': {"error_code": 201, "error_msg": "项目不存在", "data": {}},
+        'msg_exit_project': {"error_code": 201, "error_msg": "项目已存在", "data": {}},
+        'msg_exit_depository': {"error_code": 201, "error_msg": "仓库已存在", "data": {}},
+        'msg_no_depository': {"error_code": 201, "error_msg": "仓库不存在", "data": {}},
+        'msg_exit_catalogue': {"error_code": 201, "error_msg": "目录已存在", "data": {}},
+        'msg_no_catalogue': {"error_code": 201, "error_msg": "目录不存在", "data": {}},
         'msg_exit_subject': {"error_code": 201, "error_msg": "项目已存在", "data": {}},
         'msg_no_subject': {"error_code": 201, "error_msg": "项目不存在", "data": {}},
         'action_code_non': {"error_code": 201, "error_msg": "操作码不存在", "data": {}},
@@ -589,13 +600,19 @@ def check_get_parameter(*keys):
 
 
 def check_post_parameter(*keys):
+
     def decorator(func):
+
         @wraps(func)
+
         def wrapper(*args, **kwargs):
             request_url = flask.request.url
+
             api_logger.debug("URL:" + request_url + ".准备检查请求格式")
             try:
+
                 request_parameters = flask.request.json
+
             except Exception as e:
                 api_logger.error("URL:" + request_url + "格式检查失败，原因：" + repr(e))
                 return error_msgs[301]['msg_request_body_not_json']
@@ -604,6 +621,7 @@ def check_post_parameter(*keys):
                     return error_msgs[301]['msg_request_body_not_json']
             # 检查必传项目
             for key in keys:
+
                 # 如果缺少必传项
                 if key[0] not in request_parameters:
                     return error_msgs[302]['msg_request_params_incomplete']

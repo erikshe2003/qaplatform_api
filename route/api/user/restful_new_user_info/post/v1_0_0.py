@@ -114,6 +114,7 @@ def new_user_info_post():
             code,
             odata["operationId"]
         )
+        print(odata["operationId"])
         # 如果发送失败，则返回错误信息
         if send_result_flag is False:
             if send_result_type == -1:
