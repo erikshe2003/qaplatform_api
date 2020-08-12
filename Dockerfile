@@ -1,5 +1,5 @@
 FROM python:3.6.8
-ADD ./* /var/www/qaplatform_api/
+COPY ./ /var/www/qaplatform_api/
 WORKDIR /var/www/qaplatform_api/
 RUN python3 -m venv env
 RUN /bin/bash -c "source env/bin/activate"
