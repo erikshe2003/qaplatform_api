@@ -13,6 +13,7 @@ from model.mysql import model_mysql_case
 from model.mysql import model_mysql_caseFile
 from model.mysql import model_mysql_caseStep
 from model.mysql import model_mysql_caseEditLog
+
 """
     获取个人测试计划基础信息-api路由
     ----校验
@@ -46,31 +47,28 @@ from model.mysql import model_mysql_caseEditLog
     ['files', list, 0, None],
 
 )
-
 def key_case_post():
     # 初始化返回内容
     response_json = {
-    "code": 200,
-    "msg": "数据新增成功",
-    "data": None
-   }
+        "code": 200,
+        "msg": "数据新增成功",
+        "data": None
+    }
 
     # 取出必传入参
     request_user_id = flask.request.headers['UserId']
     case_columnId = flask.request.json['columnId']
-    case_title= flask.request.json['title']
+    case_title = flask.request.json['title']
     case_level = flask.request.json['level']
     front_case = flask.request.json['frontCaseId']
     case_precondition = flask.request.json['casePrecondition']
     case_step = flask.request.json['caseStep']
     files = flask.request.json['files']
 
-
-
     # 查目录是否存在
     try:
         mysql_column = model_mysql_case.query.filter(
-            model_mysql_case.id == case_columnId,model_mysql_case.type==1,model_mysql_case.status==1
+            model_mysql_case.id == case_columnId, model_mysql_case.type == 1, model_mysql_case.status == 1
         ).first()
     except Exception as e:
         api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
@@ -81,8 +79,8 @@ def key_case_post():
         else:
             pass
 
-    #判断必输项title、front_case和level必传
-    if len(case_title)==0:
+    # 判断必输项title、front_case和level必传
+    if len(case_title) == 0:
         return route.error_msgs[201]['msg_data_error']
     elif case_level is None:
         return route.error_msgs[201]['msg_data_error']
@@ -92,7 +90,8 @@ def key_case_post():
     # 查同名用例是否存在
     try:
         mysql_case = model_mysql_case.query.filter(
-            model_mysql_case.title == case_title,model_mysql_case.type==2,model_mysql_case.status==1,model_mysql_case.columnId==case_columnId
+            model_mysql_case.title == case_title, model_mysql_case.type == 2, model_mysql_case.status == 1,
+            model_mysql_case.columnId == case_columnId
         ).first()
     except Exception as e:
         api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
@@ -103,10 +102,9 @@ def key_case_post():
         else:
             return route.error_msgs[201]['msg_case_exit']
 
-
-    #插入用例主数据
-    if front_case==0:
-        index=1
+    # 插入用例主数据
+    if front_case == 0:
+        index = 1
         indexchang(index, case_columnId)
         new_case_info = model_mysql_case(
 
@@ -119,7 +117,9 @@ def key_case_post():
             status=1,
             veri=0,
             arch=0,
-            userId=request_user_id
+            userId=request_user_id,
+            depositoryId=mysql_column.depositoryId,
+            originalCaseId=0
 
         )
         mysqlpool.session.add(new_case_info)
@@ -136,8 +136,8 @@ def key_case_post():
             if mysql_front is None:
                 return route.error_msgs[201]['msg_no_case']
             else:
-                index=mysql_front.index+1
-                indexchang(index,case_columnId)
+                index = mysql_front.index + 1
+                indexchang(index, case_columnId)
                 new_case_info = model_mysql_case(
 
                     title=case_title,
@@ -149,7 +149,9 @@ def key_case_post():
                     status=1,
                     veri=0,
                     arch=0,
-                    userId=request_user_id
+                    userId=request_user_id,
+                    depositoryId=mysql_column.depositoryId,
+                    originalCaseId=0
 
                 )
                 mysqlpool.session.add(new_case_info)
@@ -158,8 +160,9 @@ def key_case_post():
     # 获取用例id
     try:
         mysql_case_info = model_mysql_case.query.filter(
-                model_mysql_case.title == case_title, model_mysql_case.type == 2, model_mysql_case.status == 1,model_mysql_case.index==index
-            ).first()
+            model_mysql_case.title == case_title, model_mysql_case.type == 2, model_mysql_case.status == 1,
+            model_mysql_case.index == index
+        ).first()
     except Exception as e:
         api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
         return route.error_msgs[500]['msg_db_error']
@@ -168,28 +171,28 @@ def key_case_post():
             return route.error_msgs[201]['msg_no_case']
 
     precondition(mysql_case_info.id, case_precondition)
-    ossPath(mysql_case_info.id, request_user_id,files)
+    osspath(mysql_case_info.id, request_user_id, files)
     casestep(mysql_case_info.id, case_step, request_user_id)
 
-    #添加日志
-    case_logs=model_mysql_caseEditLog(
+    # 添加日志
+    case_logs = model_mysql_caseEditLog(
         caseId=mysql_case_info.id,
         type=1
     )
     mysqlpool.session.add(case_logs)
     mysqlpool.session.commit()
 
-
     # 最后返回内容
     return response_json
 
-#改变后续的排序
-def indexchang(index,columnId):
+
+# 改变后续的排序
+def indexchang(index, columnid):
     # 将后面的用例index+1
     try:
         back_case = model_mysql_case.query.filter(
             model_mysql_case.index >= index, model_mysql_case.type == 2, model_mysql_case.status == 1,
-            model_mysql_case.columnId == columnId
+            model_mysql_case.columnId == columnid
         ).all()
     except Exception as e:
         api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
@@ -202,63 +205,58 @@ def indexchang(index,columnId):
                 mqti.index += 1
                 mysqlpool.session.commit()
 
-def precondition(caseid,case_precondition):
-    #插入前置条件
-    if len(case_precondition)==0:
+
+def precondition(caseid, case_precondition):
+    # 插入前置条件
+    if len(case_precondition) == 0:
         pass
     else:
-        new_casePrecondition_info = model_mysql_casePrecondition(
+        new_caseprecondition_info = model_mysql_casePrecondition(
             content=case_precondition,
             caseId=caseid
         )
-        mysqlpool.session.add(new_casePrecondition_info)
+        mysqlpool.session.add(new_caseprecondition_info)
         mysqlpool.session.commit()
 
-def ossPath(caseid,userID,files):
 
+def osspath(caseid, userid, files):
     # 插入附件oss地址
     if len(files) == 0:
         pass
     else:
         for x in files:
-
-            new_caseFile_info = model_mysql_caseFile(
+            new_casefile_info = model_mysql_caseFile(
                 ossPath=x['ossPath'],
                 caseId=caseid,
                 status=1,
-                userId=userID,
+                userId=userid,
                 fileAlias=x['fileAlias']
 
             )
 
-            mysqlpool.session.add(new_caseFile_info)
+            mysqlpool.session.add(new_casefile_info)
 
             mysqlpool.session.commit()
 
 
+def casestep(caseid, case_step, userid):
+    # 插入测试步骤
+    # 这里一定要注意传入数组的参数中千万不能有空格，否则会死都查不出为啥会错，python的json方法无法解析，postman居然可以识别。
 
-
-
-
-def casestep(caseid,case_step,userID):
-    #插入测试步骤
-    #这里一定要注意传入数组的参数中千万不能有空格，否则会死都查不出为啥会错，python的json方法无法解析，postman居然可以识别。
-
-    if len(case_step)==0:
+    if len(case_step) == 0:
         pass
     else:
         try:
             for x in case_step:
-                new_caseStep_info = model_mysql_caseStep(
+                new_casestep_info = model_mysql_caseStep(
                     index=x['index'],
                     caseId=caseid,
                     content=x['content'],
                     expectation=x['expectation'],
                     status=1,
-                    userId=userID
-
+                    userId=userid
                 )
-                mysqlpool.session.add(new_caseStep_info)
+                mysqlpool.session.add(new_casestep_info)
                 mysqlpool.session.commit()
         except Exception as e:
             api_logger.error("测试数据读取失败，失败原因：" + repr(e))

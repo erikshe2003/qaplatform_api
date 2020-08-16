@@ -45,8 +45,9 @@ def key_case_get():
         "index": None,
         "level": None,
         "casePrecondition": None,
+        "originalCaseId":None,
         "caseStep": [],
-        "ossPath": None
+        "ossPath": []
     }
    }
 
@@ -71,6 +72,7 @@ def key_case_get():
             response_json['data']['title'] = mysql_case_info.title
             response_json['data']['level'] = mysql_case_info.level
             response_json['data']['index'] = mysql_case_info.index
+            response_json['data']['originalCaseId'] = mysql_case_info.originalCaseId
 
     #查询是否存在前置条件
     try:
@@ -90,7 +92,7 @@ def key_case_get():
     try:
         mysql_caseFile_info = model_mysql_caseFile.query.filter(
             model_mysql_caseFile.caseId == case_id,model_mysql_caseFile.status==1
-        ).first()
+        ).all()
     except Exception as e:
         api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
         return route.error_msgs[500]['msg_db_error']
@@ -98,7 +100,12 @@ def key_case_get():
         if mysql_caseFile_info is None:
             pass
         else:
-            response_json['data']['ossPath'] =mysql_caseFile_info.ossPath
+            for mqti in mysql_caseFile_info:
+                response_json['data']['ossPath'].append({
+                        "id": mqti.id,
+                        "ossPath": mqti.ossPath,
+                        "fileAlias": mqti.fileAlias
+                    })
 
     #查询是否存在测试步骤
     try:

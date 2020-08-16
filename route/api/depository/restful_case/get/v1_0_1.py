@@ -45,6 +45,7 @@ def key_case_get():
         "index": None,
         "level": None,
         "casePrecondition": None,
+        "originalCaseId": None,
         "caseStep": [],
         "ossPath": []
     }
@@ -71,6 +72,7 @@ def key_case_get():
             response_json['data']['title'] = mysql_case_info.title
             response_json['data']['level'] = mysql_case_info.level
             response_json['data']['index'] = mysql_case_info.index
+            response_json['data']['originalCaseId'] = mysql_case_info.originalCaseId
 
     #查询是否存在前置条件
     try:

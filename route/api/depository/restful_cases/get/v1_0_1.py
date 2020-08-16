@@ -149,7 +149,7 @@ def key_cases_get():
                     'level':mysql_case_info.level,
                     'index':mysql_case_info.index,
                     'casePrecondition':None,
-                    'ossPath':None,
+                    'ossPath':[],
                     'caseStep':[]
 
                 })
@@ -175,7 +175,7 @@ def key_cases_get():
         try:
             mysql_caseFile_info = model_mysql_caseFile.query.filter(
                 model_mysql_caseFile.caseId == case_id, model_mysql_caseFile.status == 1
-            ).first()
+            ).all()
         except Exception as e:
             api_logger.error("读取失败，失败原因：" + repr(e))
             return route.error_msgs[500]['msg_db_error']
@@ -183,7 +183,13 @@ def key_cases_get():
             if mysql_caseFile_info is None:
                 pass
             else:
-                response_json['data'][count]['ossPath'] = mysql_casePrecondition_info.content
+                for x in mysql_caseFile_info:
+                    response_json['data'][count]['ossPath'].append({
+                        "id": x.id,
+                        "ossPath": x.ossPath,
+                        "fileAlias": x.fileAlias
+                    }
+                    )
 
         # 查询是否存在测试步骤
         try:
