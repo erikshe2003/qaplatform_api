@@ -311,7 +311,6 @@ def indexchang(index, columnId):
                 mqti.index += 1
                 mysqlpool.session.commit()
 
-
 # 改变后续的排序
 def indexchang2(index, columnId):
     # 将后面的用例index+1
