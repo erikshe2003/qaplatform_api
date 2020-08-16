@@ -10,3 +10,5 @@ Flask-Sockets
 numba
 pandas
 openpyxl
+pymongo
+flask_restful
