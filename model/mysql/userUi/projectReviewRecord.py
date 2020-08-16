@@ -22,6 +22,11 @@ class projectReviewRecord(mysqlpool.Model):
         type_=TINYINT(4),
         nullable=False
     )
+    projectId = mysqlpool.Column(
+        name="projectId",
+        type_=TINYINT(4),
+        nullable=False
+    )
     initiatorId = mysqlpool.Column(
         name="initiatorId",
         type_=TINYINT(4),

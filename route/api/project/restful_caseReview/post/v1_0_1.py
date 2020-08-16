@@ -74,7 +74,8 @@ def key_caseReview_post():
                     caseId=case_id,
                     initiatorId=request_user_id,
                     reviewerId=reviewer_id,
-                    result=0
+                    result=1,
+                    projectId=mysql_case_info.projectId
                 )
                 mysqlpool.session.add(new_case_review)
                 mysqlpool.session.commit()
