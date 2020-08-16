@@ -56,7 +56,7 @@ def key_caseReview_put():
         try:
             mysql_cases_info = model_mysql_case.query.filter(
                 model_mysql_case.type == 2,
-                model_mysql_case.status == 1,
+                model_mysql_case.status.in_([1,3]),
                 model_mysql_case.veri == 1,
                 model_mysql_case.projectId == project_id
             ).all()
@@ -67,6 +67,7 @@ def key_caseReview_put():
             if mysql_cases_info is None:
                 return route.error_msgs[201]['msg_no_case']
             else:
+                print(mysql_cases_info)
                 for mqcs in mysql_cases_info:
                     try:
                         mysql_reviewrecord_info = model_mysql_projectReviewRecord.query.filter(
@@ -78,49 +79,49 @@ def key_caseReview_put():
                         api_logger.error("数据读取失败，失败原因：" + repr(e))
                         return route.error_msgs[500]['msg_db_error']
                     else:
+
+                        print(mysql_reviewrecord_info)
                         if mysql_reviewrecord_info is None:
                             return route.error_msgs[201]['msg_no_reviewrecode']
                         else:
                             mqcs.veri=result
                             mysql_reviewrecord_info.result=result
                             mysqlpool.session.commit()
-        return response_json
 
 
-
-
-    # 判断用例是否存在
-    try:
-        mysql_case_info = model_mysql_case.query.filter(
-            model_mysql_case.id == case_id,
-            model_mysql_case.type == 2,
-            model_mysql_case.status == 1,
-            model_mysql_case.veri == 1,
-            model_mysql_case.projectId==project_id
-        ).first()
-    except Exception as e:
-        api_logger.error("数据读取失败，失败原因：" + repr(e))
-        return route.error_msgs[500]['msg_db_error']
     else:
-        if mysql_case_info is None:
-            return route.error_msgs[201]['msg_no_case']
-    # 判断是否存在评审记录
-    try:
-        mysql_reviewrecord_info = model_mysql_projectReviewRecord.query.filter(
+
+        # 判断用例是否存在
+        try:
+            mysql_case_info = model_mysql_case.query.filter(
+                model_mysql_case.id == case_id,
+                model_mysql_case.type == 2,
+                model_mysql_case.status == 1,
+                model_mysql_case.veri == 1,
+                model_mysql_case.projectId == project_id
+            ).first()
+        except Exception as e:
+            api_logger.error("数据读取失败，失败原因：" + repr(e))
+            return route.error_msgs[500]['msg_db_error']
+        else:
+            if mysql_case_info is None:
+                return route.error_msgs[201]['msg_no_case']
+        # 判断是否存在评审记录
+        try:
+            mysql_reviewrecord_info = model_mysql_projectReviewRecord.query.filter(
                 model_mysql_projectReviewRecord.caseId == case_id,
                 model_mysql_projectReviewRecord.reviewerId == request_user_id,
                 model_mysql_projectReviewRecord.result == 0
             ).first()
-    except Exception as e:
-        api_logger.error("数据读取失败，失败原因：" + repr(e))
-        return route.error_msgs[500]['msg_db_error']
-    else:
-        if mysql_reviewrecord_info is None:
-            return route.error_msgs[201]['msg_no_reviewrecode']
+        except Exception as e:
+            api_logger.error("数据读取失败，失败原因：" + repr(e))
+            return route.error_msgs[500]['msg_db_error']
+        else:
+            if mysql_reviewrecord_info is None:
+                return route.error_msgs[201]['msg_no_reviewrecode']
 
-    mysql_case_info.veri=result
-    mysql_reviewrecord_info.result=result
-    mysqlpool.session.commit()
-
+        mysql_case_info.veri = result
+        mysql_reviewrecord_info.result = result
+        mysqlpool.session.commit()
 
     return response_json

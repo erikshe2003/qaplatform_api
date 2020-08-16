@@ -13,7 +13,7 @@ from model.mysql import model_mysql_casePrecondition
 from model.mysql import model_mysql_case
 from model.mysql import model_mysql_caseFile
 from model.mysql import model_mysql_caseStep
-from model.mysql import model_mysql_project
+from model.mysql import model_mysql_projectReviewRecord
 
 """
     获取个人测试计划基础信息-api路由
@@ -93,7 +93,7 @@ def key_case_delete():
                 case_type = 2
                 case_userId = request_user_id
                 case_status = 3
-                case_veri = 1
+                case_veri = 0
                 case_arch = 0
                 case_step = []
                 oss_path = []

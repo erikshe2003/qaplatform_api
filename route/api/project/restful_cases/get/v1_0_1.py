@@ -125,7 +125,7 @@ def key_cases_get():
                         and_(
                             model_mysql_case.columnId == column_id,
                             model_mysql_case.projectId == project_id,
-                            model_mysql_case.status == 1,
+                            model_mysql_case.status.in_([1,3]),
                             model_mysql_case.type == 2
                         )
                     )
@@ -160,7 +160,7 @@ def key_cases_get():
                         and_(
                             model_mysql_case.columnId == column_id,
                             model_mysql_case.projectId == project_id,
-                            model_mysql_case.status == 1,
+                            model_mysql_case.status.in_([1,3]),
                             model_mysql_case.type == 2
                         )
                     )
@@ -196,7 +196,7 @@ def key_cases_get():
                         and_(
                             model_mysql_case.columnId == column_id,
                             model_mysql_case.projectId == project_id,
-                            model_mysql_case.status == 1,
+                            model_mysql_case.status.in_([1,3]),
                             model_mysql_case.type == 2,
                             model_mysql_case.title.like('%' + key_word + '%')
                         )
@@ -229,7 +229,7 @@ def key_cases_get():
                         and_(
                             model_mysql_case.columnId == column_id,
                             model_mysql_case.projectId == project_id,
-                            model_mysql_case.status == 1,
+                            model_mysql_case.status.in_([1,3]),
                             model_mysql_case.type == 2,
                             model_mysql_case.title.like('%' + key_word + '%')
                              )
@@ -267,6 +267,9 @@ def key_cases_get():
                     'title': mysql_case_info.title,
                     'level': mysql_case_info.level,
                     'index': mysql_case_info.index,
+                    'veri': mysql_case_info.veri,
+                    'status': mysql_case_info.status,
+                    'arch': mysql_case_info.arch,
                     'casePrecondition': None,
                     'ossPath': [],
                     'caseStep': []
