@@ -25,3 +25,4 @@ if __name__ == '__main__':
         sys_logger.error(logmsg)
     logmsg = "系统初始化|测试环境启动结束"
     sys_logger.info(logmsg)
+
