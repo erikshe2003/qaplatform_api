@@ -13,6 +13,7 @@ from model.mysql import model_mysql_case
 from model.mysql import model_mysql_caseFile
 from model.mysql import model_mysql_caseStep
 from model.mysql import model_mysql_caseEditLog
+
 """
     获取个人测试计划基础信息-api路由
     ----校验
@@ -43,35 +44,35 @@ from model.mysql import model_mysql_caseEditLog
     ['level', int, 1, None],
     ['casePrecondition', str, None, None],
     ['caseStep', list, 0, None],
-    ['files', list, 0, None]
+    ['files', list, 0, None],
+    ['projectId', int, 1, None],
 
 )
-
 def key_case_put():
-    index=0
+    index = 0
     # 初始化返回内容
     response_json = {
-    "code": 200,
-    "msg": "数据修改成功",
-    "data": None
-   }
+        "code": 200,
+        "msg": "数据修改成功",
+        "data": None
+    }
 
     # 取出必传入参
     request_user_id = flask.request.headers['UserId']
     case_id = flask.request.json['caseId']
     case_columnId = flask.request.json['columnId']
-    case_title= flask.request.json['title']
+    case_title = flask.request.json['title']
     case_level = flask.request.json['level']
     front_case = flask.request.json['frontCaseId']
     case_precondition = flask.request.json['casePrecondition']
     case_step = flask.request.json['caseStep']
     files = flask.request.json['files']
-
+    project_id = flask.request.json['projectId']
 
     # 查用例是否存在
     try:
         mysql_caseinfo = model_mysql_case.query.filter(
-            model_mysql_case.id == case_id,model_mysql_case.type==2,model_mysql_case.status==1
+            model_mysql_case.id == case_id, model_mysql_case.type == 2, model_mysql_case.status == 1
         ).first()
     except Exception as e:
         api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
@@ -80,13 +81,12 @@ def key_case_put():
         if mysql_caseinfo is None:
             return route.error_msgs[201]['msg_no_case']
         else:
-            before_title=mysql_caseinfo.title
-
+            before_title = mysql_caseinfo.title
 
     # 查目录是否存在，更新目录
     try:
         mysql_column = model_mysql_case.query.filter(
-            model_mysql_case.id == case_columnId,model_mysql_case.type==1,model_mysql_case.status==1
+            model_mysql_case.id == case_columnId, model_mysql_case.type == 1, model_mysql_case.status == 1
         ).first()
     except Exception as e:
         api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
@@ -95,103 +95,205 @@ def key_case_put():
         if mysql_column is None:
             return route.error_msgs[201]['msg_no_catalogue']
 
-
-    #判断必输项title、front_case和level必传
-    if len(case_title)==0:
+    # 判断必输项title、front_case和level必传
+    if len(case_title) == 0:
         return route.error_msgs[201]['msg_data_error']
     elif case_level is None:
         return route.error_msgs[201]['msg_data_error']
     elif front_case is None:
         return route.error_msgs[201]['msg_data_error']
 
+    # 判断是否需要拷贝一个新的case
+    # 相同不需要拷贝
+    if int(mysql_caseinfo.projectId) == int(project_id):
+        # 更新用例主数据
+        if front_case == 0:
+            index = 1
+            # 判断目录是否改变
+            if mysql_caseinfo.columnId == case_columnId:
+                indexchang2(mysql_caseinfo.index, case_columnId)
+                mysql_caseinfo.index = 0
+                mysqlpool.session.commit()
+                indexchang(index, case_columnId)
+            else:
+                indexchang(index, case_columnId)
 
+            mysql_caseinfo.index = 1
+            mysql_caseinfo.title = case_title
+            mysql_caseinfo.level = case_level
+            mysql_caseinfo.columnId = case_columnId
+            mysql_caseinfo.veri = 0
 
-    #更新用例主数据
-    if front_case==0:
-        index=1
-        #判断目录是否改变
-        if mysql_caseinfo.columnId==case_columnId:
-            indexchang2(mysql_caseinfo.index, case_columnId)
-            mysql_caseinfo.index = 0
             mysqlpool.session.commit()
-            indexchang(index, case_columnId)
         else:
-            indexchang(index, case_columnId)
+            try:
+                mysql_front = model_mysql_case.query.filter(
+                    model_mysql_case.id == front_case, model_mysql_case.type == 2, model_mysql_case.status == 1
+                ).first()
+            except Exception as e:
+                api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
+                return route.error_msgs[500]['msg_db_error']
+            else:
+                if mysql_front is None:
+                    return route.error_msgs[201]['msg_no_case']
+                else:
+                    # *************需要解决往下拖的问题，往上托目前没问题
+                    index = mysql_front.index + 1
 
-        mysql_caseinfo.index=1
-        mysql_caseinfo.title=case_title
-        mysql_caseinfo.level=case_level
-        mysql_caseinfo.columnId = case_columnId
-        mysql_caseinfo.veri = 0
+                    if mysql_caseinfo.columnId == case_columnId:
+                        indexchang2(mysql_caseinfo.index, case_columnId)
+                        mysql_caseinfo.index = 0
+                        mysqlpool.session.commit()
+                        # 重新获取前一个case的排序
+                        try:
+                            mysql_front = model_mysql_case.query.filter(
+                                model_mysql_case.id == front_case, model_mysql_case.type == 2,
+                                model_mysql_case.status == 1
+                            ).first()
+                        except Exception as e:
+                            api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
+                            return route.error_msgs[500]['msg_db_error']
+                        index = mysql_front.index + 1
 
-        mysqlpool.session.commit()
+                        indexchang(index, case_columnId)
+                    else:
+                        indexchang(index, case_columnId)
+
+                    mysql_caseinfo.index = index
+                    mysql_caseinfo.title = case_title
+                    mysql_caseinfo.level = case_level
+                    mysql_caseinfo.columnId = case_columnId
+                    mysql_caseinfo.veri = 0
+
+                    mysqlpool.session.commit()
+
+        precondition(mysql_caseinfo.id, case_precondition)
+        ossPath(mysql_caseinfo.id, request_user_id, files)
+        casestep(mysql_caseinfo.id, case_step, request_user_id)
+
+        # 添加日志
+
+        if before_title == case_title:
+            pass
+        else:
+            case_logs = model_mysql_caseEditLog(
+                caseId=mysql_caseinfo.id,
+                type=2,
+                before=before_title,
+                after=case_title
+            )
+            mysqlpool.session.add(case_logs)
+            mysqlpool.session.commit()
     else:
+        # 获取原用例信息
+        case_title = case_title
+        case_depositoryId = mysql_caseinfo.depositoryId
+        case_projectId = project_id
+        case_columnId = case_columnId
+        case_index = mysql_caseinfo.index
+        case_level = case_level
+        case_type = 2
+        case_userId = request_user_id
+        case_status = 1
+        case_veri = 0
+        case_arch = 0
+
+
+        # 获取原用例的前置条件
+
+        case_precondition = case_precondition
+        # # 查询是否存在附件
+        oss_path = files
+
+        # 查询是否存在测试步骤
+        case_step = case_step
+
+        # 备份新的用例
+        new_case_info = model_mysql_case(
+
+            title=case_title,
+            columnId=case_columnId,
+            projectId=case_projectId,
+            index=case_index,
+            level=case_level,
+            type=case_type,
+            status=case_status,
+            veri=case_veri,
+            arch=case_arch,
+            userId=case_userId,
+            depositoryId=case_depositoryId,
+            originalCaseId=case_id
+
+        )
+        mysqlpool.session.add(new_case_info)
+        mysqlpool.session.commit()
+
+        # 获得主用例编号
         try:
-            mysql_front = model_mysql_case.query.filter(
-                model_mysql_case.id == front_case, model_mysql_case.type == 2, model_mysql_case.status == 1
+            mysql_id = model_mysql_case.query.filter(
+                model_mysql_case.projectId == case_projectId, model_mysql_case.type == 2,
+                model_mysql_case.status == 1,
+                model_mysql_case.columnId == case_columnId, model_mysql_case.originalCaseId == case_id
             ).first()
         except Exception as e:
             api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
             return route.error_msgs[500]['msg_db_error']
         else:
-            if mysql_front is None:
+            if mysql_id is None:
                 return route.error_msgs[201]['msg_no_case']
-            else:
-                #*************需要解决往下拖的问题，往上托目前没问题
-                index=mysql_front.index+1
-
-                if mysql_caseinfo.columnId == case_columnId:
-                    indexchang2(mysql_caseinfo.index, case_columnId)
-                    mysql_caseinfo.index=0
-                    mysqlpool.session.commit()
-                    #重新获取前一个case的排序
-                    try:
-                        mysql_front = model_mysql_case.query.filter(
-                            model_mysql_case.id == front_case, model_mysql_case.type == 2, model_mysql_case.status == 1
-                        ).first()
-                    except Exception as e:
-                        api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
-                        return route.error_msgs[500]['msg_db_error']
-                    index = mysql_front.index + 1
-
-                    indexchang(index, case_columnId)
-                else:
-                    indexchang(index, case_columnId)
-
-                mysql_caseinfo.index = index
-                mysql_caseinfo.title = case_title
-                mysql_caseinfo.level = case_level
-                mysql_caseinfo.columnId = case_columnId
-                mysql_caseinfo.veri = 0
-
-                mysqlpool.session.commit()
 
 
+        if case_precondition is None:
+            pass
+        else:
+            new_caseprecondition_info = model_mysql_casePrecondition(
+                content=case_precondition,
+                caseId=mysql_id.id
+            )
+            mysqlpool.session.add(new_caseprecondition_info)
 
-    precondition(mysql_caseinfo.id, case_precondition)
-    ossPath(mysql_caseinfo.id, request_user_id,files)
-    casestep(mysql_caseinfo.id, case_step, request_user_id)
+        if len(oss_path) == 0:
+            pass
+        else:
+            for x in oss_path:
+                new_casefile_info = model_mysql_caseFile(
+                    ossPath=x['ossPath'],
+                    caseId=mysql_id.id,
+                    status=1,
+                    userId=case_userId,
+                    fileAlias=x['fileAlias']
+                )
+                mysqlpool.session.add(new_casefile_info)
 
-    # 添加日志
-
-    if before_title==case_title:
-        pass
-    else:
+        if len(case_step) == 0:
+            pass
+        else:
+            for x in case_step:
+                new_casestep_info = model_mysql_caseStep(
+                    index=x['index'],
+                    caseId=mysql_id.id,
+                    content=x['content'],
+                    expectation=x['expectation'],
+                    status=1,
+                    userId=case_userId,
+                    updateUserId=case_userId
+                )
+                mysqlpool.session.add(new_casestep_info)
+        mysqlpool.session.commit()
+        # 添加日志
         case_logs = model_mysql_caseEditLog(
-            caseId=mysql_caseinfo.id,
-            type=2,
-            before=before_title,
-            after=case_title
+            caseId=mysql_id.id,
+            type=1
         )
         mysqlpool.session.add(case_logs)
         mysqlpool.session.commit()
 
-
     # 最后返回内容
     return response_json
 
-#改变后续的排序
-def indexchang(index,columnId):
+
+# 改变后续的排序
+def indexchang(index, columnId):
     # 将后面的用例index+1
     try:
         back_case = model_mysql_case.query.filter(
@@ -208,8 +310,10 @@ def indexchang(index,columnId):
             for mqti in back_case:
                 mqti.index += 1
                 mysqlpool.session.commit()
-#改变后续的排序
-def indexchang2(index,columnId):
+
+
+# 改变后续的排序
+def indexchang2(index, columnId):
     # 将后面的用例index+1
     try:
         back_case = model_mysql_case.query.filter(
@@ -227,19 +331,20 @@ def indexchang2(index,columnId):
                 mqti.index -= 1
                 mysqlpool.session.commit()
 
-def precondition(caseid,case_precondition):
-    #更新分多种场景
+
+def precondition(caseid, case_precondition):
+    # 更新分多种场景
     try:
         case_Precondition = model_mysql_casePrecondition.query.filter(
-            model_mysql_casePrecondition.caseId== caseid
+            model_mysql_casePrecondition.caseId == caseid
         ).first()
     except Exception as e:
         api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
         return route.error_msgs[500]['msg_db_error']
     else:
-        #原来为空，现在也为空不更新，现在非空则插入数据
+        # 原来为空，现在也为空不更新，现在非空则插入数据
         if case_Precondition is None:
-            if len(case_precondition)==0:
+            if len(case_precondition) == 0:
                 pass
             else:
                 new_casePrecondition_info = model_mysql_casePrecondition(
@@ -249,12 +354,12 @@ def precondition(caseid,case_precondition):
                 mysqlpool.session.add(new_casePrecondition_info)
                 mysqlpool.session.commit()
         else:
-            #原来不为空，现在为空/非空直接更新即可
-            case_Precondition.content=case_precondition
+            # 原来不为空，现在为空/非空直接更新即可
+            case_Precondition.content = case_precondition
             mysqlpool.session.commit()
 
 
-def ossPath(caseid,userID,files):
+def ossPath(caseid, userID, files):
     if len(files) == 0:
         pass
     else:
@@ -272,10 +377,10 @@ def ossPath(caseid,userID,files):
                 mysqlpool.session.add(new_caseFile_info)
                 mysqlpool.session.commit()
 
-                #获取id
+                # 获取id
                 try:
                     case_file = model_mysql_caseFile.query.filter(
-                        model_mysql_caseFile.caseId == caseid,model_mysql_caseFile.ossPath==x['ossPath']
+                        model_mysql_caseFile.caseId == caseid, model_mysql_caseFile.ossPath == x['ossPath']
                     ).first()
                 except Exception as e:
                     api_logger.error("读取失败，失败原因：" + repr(e))
@@ -308,7 +413,7 @@ def ossPath(caseid,userID,files):
                         case_file_info.status = x['status']
                         case_file_info.userId = userID
                         mysqlpool.session.commit()
-                        if x['status']==-1:
+                        if x['status'] == -1:
                             # 添加日志
                             case_logs = model_mysql_caseEditLog(
                                 caseId=caseid,
@@ -318,13 +423,14 @@ def ossPath(caseid,userID,files):
                             mysqlpool.session.add(case_logs)
                             mysqlpool.session.commit()
 
-def casestep(caseid,case_step,userID):
-    lists=[]
-    #插入测试步骤
-    #这里一定要注意传入数组的参数中千万不能有空格，否则会死都查不出为啥会错，python的json方法无法解析，postman居然可以识别。
+
+def casestep(caseid, case_step, userID):
+    lists = []
+    # 插入测试步骤
+    # 这里一定要注意传入数组的参数中千万不能有空格，否则会死都查不出为啥会错，python的json方法无法解析，postman居然可以识别。
     try:
         case_caseStep = model_mysql_caseStep.query.filter(
-            model_mysql_caseStep.caseId == caseid,model_mysql_caseStep.status==1
+            model_mysql_caseStep.caseId == caseid, model_mysql_caseStep.status == 1
         ).all()
 
     except Exception as e:
@@ -332,12 +438,12 @@ def casestep(caseid,case_step,userID):
         return route.error_msgs[500]['msg_db_error']
     else:
         # 原来为空
-        if len(case_caseStep)==0:
+        if len(case_caseStep) == 0:
 
-            #现在也为空
+            # 现在也为空
             if len(case_step) == 0:
                 pass
-            #现在不为空
+            # 现在不为空
             else:
                 try:
                     for x in case_step:
@@ -354,19 +460,19 @@ def casestep(caseid,case_step,userID):
                 except Exception as e:
                     api_logger.error("测试数据读取失败，失败原因：" + repr(e))
                     return route.error_msgs[500]['msg_db_error']
-        #原来数据不为空
+        # 原来数据不为空
         else:
-            #现在数据为空
+            # 现在数据为空
 
             if len(case_step) == 0:
                 for x in case_caseStep:
-                    x.status=-1
-                    x.updateUserId=userID
+                    x.status = -1
+                    x.updateUserId = userID
                     mysqlpool.session.commit()
 
                 # 现在不为空
             else:
-                #修改用例需要穿step-id
+                # 修改用例需要穿step-id
                 try:
                     for x in case_step:
                         lists.append(x['id'])
@@ -393,8 +499,8 @@ def casestep(caseid,case_step,userID):
                                 if case_caseStep_info is None:
                                     return route.error_msgs[201]['msg_no_casestep']
                                 else:
-                                    before_content=case_caseStep_info.content
-                                    before_expectation=case_caseStep_info.expectation
+                                    before_content = case_caseStep_info.content
+                                    before_expectation = case_caseStep_info.expectation
 
                                     case_caseStep_info.index = x['index']
                                     case_caseStep_info.content = x['content']
@@ -404,7 +510,7 @@ def casestep(caseid,case_step,userID):
                                     mysqlpool.session.commit()
                                 # 添加日志
 
-                                if before_content ==  x['content']:
+                                if before_content == x['content']:
                                     pass
                                 else:
                                     case_logs = model_mysql_caseEditLog(
@@ -416,7 +522,7 @@ def casestep(caseid,case_step,userID):
                                     mysqlpool.session.add(case_logs)
                                     mysqlpool.session.commit()
 
-                                if before_expectation ==  x['expectation']:
+                                if before_expectation == x['expectation']:
                                     pass
                                 else:
                                     case_logs = model_mysql_caseEditLog(
@@ -432,7 +538,7 @@ def casestep(caseid,case_step,userID):
                 except  Exception as e:
                     api_logger.error("读取失败，失败原因：" + repr(e))
                     return route.error_msgs[301]['msg_request_params_illegal']
-                #踢出本次删除的步骤
+                # 踢出本次删除的步骤
                 try:
                     for x in case_caseStep:
                         if x.id not in lists:
@@ -444,4 +550,3 @@ def casestep(caseid,case_step,userID):
                 except Exception as e:
                     api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
                     return route.error_msgs[500]['msg_db_error']
-

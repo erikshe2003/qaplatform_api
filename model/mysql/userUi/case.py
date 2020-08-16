@@ -17,6 +17,12 @@ class case(mysqlpool.Model):
         unique=True,
         primary_key=True
     )
+    originalCaseId = mysqlpool.Column(
+        name="originalCaseId",
+        type_=INTEGER,
+        nullable=False,
+    )
+
     title = mysqlpool.Column(
         name="title",
         type_=VARCHAR(200),

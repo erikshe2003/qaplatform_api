@@ -11,6 +11,7 @@ from handler.log import api_logger
 from model.mysql import model_mysql_project
 from model.mysql import model_mysql_projectMember
 from model.mysql import model_mysql_depository
+
 """
     获取个人测试计划基础信息-api路由
     ----校验
@@ -36,14 +37,13 @@ from model.mysql import model_mysql_depository
     ['depositoryId', int, 1, None]
 
 )
-
 def key_project_post():
     # 初始化返回内容
     response_json = {
-    "code": 200,
-    "msg": "数据新增成功",
-    "data": None
-   }
+        "code": 200,
+        "msg": "数据新增成功",
+        "data": None
+    }
 
     # 取出必传入参
     request_user_id = flask.request.headers['UserId']
@@ -69,7 +69,7 @@ def key_project_post():
     # 查询项目名称是否存在
     try:
         mysql_project = model_mysql_project.query.filter(
-            model_mysql_project.name == project_name, model_mysql_project.depositoryId==project_depositoryId
+            model_mysql_project.name == project_name, model_mysql_project.depositoryId == project_depositoryId
         ).first()
     except Exception as e:
         api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
@@ -79,7 +79,6 @@ def key_project_post():
             pass
         else:
             return route.error_msgs[201]['msg_exit_project']
-
 
     """
         插入项目数据
@@ -101,7 +100,7 @@ def key_project_post():
     # 获取项目id
     try:
         mysql_depository_info = model_mysql_project.query.filter(
-            model_mysql_project.name == project_name,model_mysql_project.depositoryId==project_depositoryId
+            model_mysql_project.name == project_name, model_mysql_project.depositoryId == project_depositoryId
         ).first()
     except Exception as e:
         api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
@@ -125,8 +124,7 @@ def key_project_post():
     )
     mysqlpool.session.add(new_projectMember_info)
     mysqlpool.session.commit()
-    #缺少copy仓库用例逻辑***************************待补
-
+    # 缺少copy仓库用例逻辑***************************最新设计不需要拷贝
 
     # 最后返回内容
     return response_json
