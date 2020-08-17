@@ -53,6 +53,35 @@ def key_caseReview_put():
     project_id = flask.request.json['projectId']
     #判断是否是一键评审,caseId需传0
     if case_id==0:
+        #先将新增且通过评审后删除的用例，评审通过直接删除，不通过变更回veri状态
+        try:
+            mysql_cases_info1 = model_mysql_case.query.filter(
+                model_mysql_case.type == 2,
+                model_mysql_case.status ==3,
+                model_mysql_case.veri == 1,
+                model_mysql_case.originalCaseId == 0,
+                model_mysql_case.projectId == project_id
+            ).all()
+        except Exception as e:
+            api_logger.error("数据读取失败，失败原因：" + repr(e))
+            return route.error_msgs[500]['msg_db_error']
+        else:
+            if mysql_cases_info1 is None:
+                pass
+            else:
+
+                for xx in mysql_cases_info1:
+                    if result ==3:
+                        xx.status=-1
+                        xx.veri=3
+                    else:
+                        xx.status = 1
+                        xx.veri = 2
+                    mysqlpool.session.commit()
+
+        # 在处理其他用例
+
+
         try:
             mysql_cases_info = model_mysql_case.query.filter(
                 model_mysql_case.type == 2,
@@ -67,8 +96,8 @@ def key_caseReview_put():
             if mysql_cases_info is None:
                 return route.error_msgs[201]['msg_no_case']
             else:
-                print(mysql_cases_info)
                 for mqcs in mysql_cases_info:
+
                     try:
                         mysql_reviewrecord_info = model_mysql_projectReviewRecord.query.filter(
                             model_mysql_projectReviewRecord.caseId == mqcs.id,
@@ -90,13 +119,37 @@ def key_caseReview_put():
 
 
     else:
+        # 先将新增且通过评审后删除的用例，评审通过直接删除，不通过变更回veri状态
+        try:
+            mysql_cases_info2 = model_mysql_case.query.filter(
+                model_mysql_case.id == case_id,
+                model_mysql_case.type == 2,
+                model_mysql_case.status == 3,
+                model_mysql_case.veri == 1,
+                model_mysql_case.originalCaseId == 0,
+                model_mysql_case.projectId == project_id
+            ).first()
+        except Exception as e:
+            api_logger.error("数据读取失败，失败原因：" + repr(e))
+            return route.error_msgs[500]['msg_db_error']
+        else:
+            if mysql_cases_info2 is None:
+                pass
+            else:
+                if result == 3:
+                    mysql_cases_info2.status = -1
+                    mysql_cases_info2.veri = 3
+                else:
+                    mysql_cases_info2.status = 1
+                    mysql_cases_info2.veri = 2
+                mysqlpool.session.commit()
 
         # 判断用例是否存在
         try:
             mysql_case_info = model_mysql_case.query.filter(
                 model_mysql_case.id == case_id,
                 model_mysql_case.type == 2,
-                model_mysql_case.status == 1,
+                model_mysql_case.status.in_([1,3]),
                 model_mysql_case.veri == 1,
                 model_mysql_case.projectId == project_id
             ).first()

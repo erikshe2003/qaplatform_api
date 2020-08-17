@@ -60,11 +60,10 @@ def key_case_delete():
         return route.error_msgs[500]['msg_db_error']
     else:
 
-
         if mysql_case_info is None:
             return route.error_msgs[201]['msg_no_case']
 
-        if mysql_case_info.status==3:
+        if mysql_case_info.status == 3 or mysql_case_info.veri == 1:
             return response_json
         else:
 
@@ -78,7 +77,7 @@ def key_case_delete():
                     mysqlpool.session.commit()
                 else:
                     # 需要判断用例是否是再库用例编辑生成的用例，删除是需要评审的
-                    if mysql_case_info.originalCaseId>0:
+                    if mysql_case_info.originalCaseId > 0:
                         mysql_case_info.status = 3
                         mysql_case_info.updateUserId = request_user_id
                         mysql_case_info.veri = 0
