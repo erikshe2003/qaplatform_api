@@ -59,28 +59,46 @@ def key_case_delete():
         api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
         return route.error_msgs[500]['msg_db_error']
     else:
+
+
         if mysql_case_info is None:
             return route.error_msgs[201]['msg_no_case']
+
+        if mysql_case_info.status==3:
+            return response_json
         else:
 
             # 判断是否是仓库的用例
             if int(mysql_case_info.projectId) == int(project_id):
+                # 需要判断用例是否通过评审，已通过评审的用例要重新评审才可以删除
+                if mysql_case_info.veri == 3:
+                    mysql_case_info.status = 3
+                    mysql_case_info.updateUserId = request_user_id
+                    mysql_case_info.veri = 0
+                    mysqlpool.session.commit()
+                else:
+                    # 需要判断用例是否是再库用例编辑生成的用例，删除是需要评审的
+                    if mysql_case_info.originalCaseId>0:
+                        mysql_case_info.status = 3
+                        mysql_case_info.updateUserId = request_user_id
+                        mysql_case_info.veri = 0
+                        mysqlpool.session.commit()
+                    else:
+                        indexchang(mysql_case_info.index, mysql_case_info.columnId)
+                        mysql_case_info.status = -1
+                        mysql_case_info.updateUserId = request_user_id
+                        mysql_case_info.index = 0
+                        mysqlpool.session.commit()
 
-                indexchang(mysql_case_info.index, mysql_case_info.columnId)
-                mysql_case_info.status = -1
-                mysql_case_info.updateUserId = request_user_id
-                mysql_case_info.index = 0
-                mysqlpool.session.commit()
+                        # 添加日志
 
-                # 添加日志
+                        case_logs = model_mysql_caseEditLog(
+                            caseId=mysql_case_info.id,
+                            type=7
+                        )
+                        mysqlpool.session.add(case_logs)
+                        mysqlpool.session.commit()
 
-                case_logs = model_mysql_caseEditLog(
-                    caseId=mysql_case_info.id,
-                    type=7
-
-                )
-                mysqlpool.session.add(case_logs)
-                mysqlpool.session.commit()
             else:
 
                 # 获取原用例信息

@@ -123,6 +123,7 @@ def key_case_put():
             mysql_caseinfo.level = case_level
             mysql_caseinfo.columnId = case_columnId
             mysql_caseinfo.veri = 0
+            mysql_caseinfo.status = 1
 
             mysqlpool.session.commit()
         else:
@@ -164,6 +165,7 @@ def key_case_put():
                     mysql_caseinfo.level = case_level
                     mysql_caseinfo.columnId = case_columnId
                     mysql_caseinfo.veri = 0
+                    mysql_caseinfo.status = 1
 
                     mysqlpool.session.commit()
 
