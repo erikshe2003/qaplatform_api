@@ -72,7 +72,7 @@ def key_case_put():
     # 查用例是否存在
     try:
         mysql_caseinfo = model_mysql_case.query.filter(
-            model_mysql_case.id == case_id, model_mysql_case.type == 2, model_mysql_case.status == 1
+            model_mysql_case.id == case_id, model_mysql_case.type == 2, model_mysql_case.status == 1,model_mysql_case.veri!=1
         ).first()
     except Exception as e:
         api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))

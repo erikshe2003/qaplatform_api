@@ -58,8 +58,8 @@ def key_caseReview_post():
             mysql_case_info = model_mysql_case.query.filter(
                 model_mysql_case.id == case_id,
                 model_mysql_case.type == 2,
-                model_mysql_case.status == 1,
-                model_mysql_case.veri==0
+                model_mysql_case.status.in_([1,3]),
+                model_mysql_case.veri.in_([0,2])
             ).first()
         except Exception as e:
             api_logger.error("数据读取失败，失败原因：" + repr(e))

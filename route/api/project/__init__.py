@@ -14,6 +14,7 @@ from .caseIndex import caseindex
 from .cases import cases
 from .caseExporFilet import caseExporFilet
 from .caseReview import caseReview
+from .projectArchive import projectArchive
 
 api_project = Blueprint('api_project', __name__)
 
@@ -32,3 +33,4 @@ api.add_resource(caseindex, '/caseIndex.json')
 api.add_resource(cases, '/cases.json')
 api.add_resource(caseExporFilet, '/caseExporFilet.json')
 api.add_resource(caseReview, '/caseReview.json')
+api.add_resource(projectArchive, '/projectArchive.json')
