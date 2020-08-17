@@ -13,6 +13,7 @@ from model.mysql import model_mysql_case
 from model.mysql import model_mysql_project
 from model.mysql import model_mysql_projectMember
 from model.mysql import model_mysql_projectArchivePendingCase
+
 """
     获取个人测试计划基础信息-api路由
     ----校验
@@ -35,14 +36,13 @@ from model.mysql import model_mysql_projectArchivePendingCase
 
     ['id', str, None, None]
 )
-
 def key_projectArchive_post():
     # 初始化返回内容
     response_json = {
-    "code": 200,
-    "msg": "提交成功",
-    "data": None
-   }
+        "code": 200,
+        "msg": "提交成功",
+        "data": None
+    }
 
     # 取出必传入参
     request_user_id = flask.request.headers['UserId']
@@ -76,8 +76,6 @@ def key_projectArchive_post():
             pass
         else:
             return route.error_msgs[201]['msg_exit_depositoryarc']
-
-
 
     # 判断用户是否拥有归档权限
     try:
@@ -113,9 +111,8 @@ def key_projectArchive_post():
         else:
             return route.error_msgs[201]['msg_exit_arcrecode']
 
-
     # 发起归档
-    start_depositoryProjectFiledOrg =model_mysql_depositoryProjectFiledOrg(
+    start_depositoryProjectFiledOrg = model_mysql_depositoryProjectFiledOrg(
         depositoryId=mysql_project_info.depositoryId,
         projectId=project_id,
         result=1
@@ -125,7 +122,7 @@ def key_projectArchive_post():
     mysqlpool.session.commit()
     # 获取归档记录id
     try:
-        mysql_projectMember_info = model_mysql_depositoryProjectFiledOrg.query.filter(
+        mysql_arc_record = model_mysql_depositoryProjectFiledOrg.query.filter(
             model_mysql_depositoryProjectFiledOrg.projectId == project_id,
             model_mysql_depositoryProjectFiledOrg.depositoryId == mysql_project_info.depositoryId,
             model_mysql_depositoryProjectFiledOrg.result == 1
@@ -135,30 +132,37 @@ def key_projectArchive_post():
         api_logger.error("数据读取失败，失败原因：" + repr(e))
         return route.error_msgs[500]['msg_db_error']
     else:
-        if mysql_projectMember_info is None:
+        if mysql_arc_record is None:
             return route.error_msgs[201]['msg_no_arcrecode']
 
     # 调用归档方法
     mysql_project_info.status = 2
     mysqlpool.session.commit()
 
-    autoarchive(project_id)
-    # 归档结束
-    mysql_project_info.status=3
-    mysql_projectMember_info.result = 2
-    mysqlpool.session.commit()
+    flag=autoarchive(project_id)
 
+    # 归档结束
+    if flag==0:
+        mysql_project_info.status = 3
+        mysql_arc_record.result = 2
+    else:
+        mysql_project_info.status = 2
+        mysql_arc_record.result = 1
+
+    mysqlpool.session.commit()
 
     return response_json
 
+
 def autoarchive(projectId):
+    count=0
     # 查询新增的用例，直接通过
     try:
         mysql_case1_id = model_mysql_case.query.filter(
             model_mysql_case.projectId == projectId,
             model_mysql_case.originalCaseId == 0,
-            model_mysql_case.veri==3,
-            model_mysql_case.status ==1
+            model_mysql_case.veri == 3,
+            model_mysql_case.status == 1
         ).all()
     except Exception as e:
 
@@ -169,18 +173,17 @@ def autoarchive(projectId):
             pass
         else:
             for mqti1 in mysql_case1_id:
-                mqti1.arch=2
+                mqti1.arch = 2
                 mysqlpool.session.commit()
 
     # 查询编辑过得用例
-    list1=[]
-    list0=[]
+
     try:
         mysql_case2_id = model_mysql_case.query.filter(
             model_mysql_case.projectId == projectId,
             model_mysql_case.originalCaseId != 0,
-            model_mysql_case.veri==3,
-            model_mysql_case.status ==1
+            model_mysql_case.veri == 3,
+            model_mysql_case.status == 1
         ).all()
     except Exception as e:
 
@@ -191,36 +194,31 @@ def autoarchive(projectId):
             pass
         else:
             for mqti2 in mysql_case2_id:
-                list1.append(mqti2.originalCaseId)
-                list0.append(mqti2.id)
-                mqti2.arch=2
-                mysqlpool.session.commit()
-            # 将仓库用例设置为失效，如果存在冲突用例计入冲突记录表
-            try:
-                mysql_case3_id = model_mysql_case.query.filter(
-                    model_mysql_case.id.in_(list1)
-                ).all()
+                # 将仓库用例设置为失效，如果存在冲突用例计入冲突记录表
+                try:
+                    mysql_case3_id = model_mysql_case.query.filter(
+                        model_mysql_case.id == mqti2.originalCaseId
+                    ).first()
 
-            except Exception as e:
+                except Exception as e:
 
-                api_logger.error("读取失败，失败原因：" + repr(e))
-                return route.error_msgs[500]['msg_db_error']
-            else:
-                if mysql_case3_id is None:
-                    pass
+                    api_logger.error("读取失败，失败原因：" + repr(e))
+                    return route.error_msgs[500]['msg_db_error']
                 else:
-                    count=0
-                    for mqti3 in mysql_case3_id:
-                        if mqti3.status==1:
-                            mqti3.status = 2
+                    if mysql_case3_id is None:
+                        mqti2.arch = 2
+                        mysqlpool.session.commit()
+                    else:
+                        if mysql_case3_id.status == 1:
+                            mysql_case3_id.status = 2
+                            mqti2.arch = 2
                             mysqlpool.session.commit()
-                            count+=1
+
                         else:
                             # 查询最后一次归档记录
                             try:
                                 mysql_last = model_mysql_depositoryProjectFiledOrg.query.filter(
-                                    model_mysql_depositoryProjectFiledOrg.depositoryId == mqti3.depositoryId,
-                                    model_mysql_depositoryProjectFiledOrg.projectId == projectId,
+                                    model_mysql_depositoryProjectFiledOrg.depositoryId == mysql_case3_id.depositoryId,
                                     model_mysql_depositoryProjectFiledOrg.result == 2
                                 ).order_by(model_mysql_depositoryProjectFiledOrg.id.desc()).first()
 
@@ -229,42 +227,47 @@ def autoarchive(projectId):
                                 api_logger.error("读取失败，失败原因：" + repr(e))
                                 return route.error_msgs[500]['msg_db_error']
                             else:
+
                                 if mysql_last is None:
+
                                     continue
                                 else:
-                                    #查询other的用例id
+
+                                    # 查询other的用例id
                                     try:
                                         mysql_other = model_mysql_case.query.filter(
                                             model_mysql_case.projectId == mysql_last.projectId,
                                             model_mysql_case.depositoryId == mysql_last.depositoryId,
-                                            model_mysql_case.originalCaseId == mqti3.id
-                                        ).all()
+                                            model_mysql_case.originalCaseId == mysql_case3_id.id
+                                        ).first()
                                     except Exception as e:
 
                                         api_logger.error("读取失败，失败原因：" + repr(e))
                                         return route.error_msgs[500]['msg_db_error']
                                     else:
+
                                         if mysql_other is None:
+
                                             continue
                                         else:
+
                                             # 冲突记录
+
+
                                             new_pend1 = model_mysql_projectArchivePendingCase(
                                                 projectId=projectId,
-                                                originalCaseId=mqti3.id,
-                                                projectIdCaseId=list0[count],
+                                                originalCaseId=mysql_case3_id.id,
+                                                projectIdCaseId=mqti2.id,
                                                 otherCaseId=mysql_other.id,
                                                 status=1
                                             )
                                             mysqlpool.session.add(new_pend1)
                                             mysqlpool.session.commit()
-                                            count += 1
-
-
+                                            count+=1
 
 
     # 查询仓库中被删除且审核通过的用例
-    list2 = []
-    list3 = []
+
     try:
         mysql_case4_id = model_mysql_case.query.filter(
             model_mysql_case.projectId == projectId,
@@ -281,37 +284,33 @@ def autoarchive(projectId):
             pass
         else:
             for mqti4 in mysql_case4_id:
-                list2.append(mqti4.originalCaseId)
-                list3.append(mqti4.id)
-                mqti4.arch = 2
-                mqti4.status = -1
-                mysqlpool.session.commit()
-            # 将仓库用例设置为已删除，如果存在冲突用例计入冲突记录表
-            try:
-                mysql_case5_id = model_mysql_case.query.filter(
-                    model_mysql_case.id.in_(list2)
-                ).all()
+                # 将仓库用例设置为已删除，如果存在冲突用例计入冲突记录表
+                try:
+                    mysql_case5_id = model_mysql_case.query.filter(
+                        model_mysql_case.id == mqti4.originalCaseId
+                    ).first()
 
-            except Exception as e:
+                except Exception as e:
 
-                api_logger.error("读取失败，失败原因：" + repr(e))
-                return route.error_msgs[500]['msg_db_error']
-            else:
-                if mysql_case5_id is None:
-                    pass
+                    api_logger.error("读取失败，失败原因：" + repr(e))
+                    return route.error_msgs[500]['msg_db_error']
                 else:
-                    count = 0
-                    for mqti5 in mysql_case5_id:
-                        if mqti5.status ==1:
-                            mqti5.status = -1
+                    if mysql_case5_id is None:
+                        mqti4.arch = 2
+                        mqti4.status = -1
+                        mysqlpool.session.commit()
+                    else:
+                        if mysql_case5_id.status == 1:
+                            mysql_case5_id.status = -1
+                            mqti4.arch = 2
+                            mqti4.status = -1
                             mysqlpool.session.commit()
-                            count += 1
+
                         else:
-                            #查询最后一次修改记录
+                            # 查询最后一次修改记录
                             try:
                                 mysql_last2 = model_mysql_depositoryProjectFiledOrg.query.filter(
-                                    model_mysql_depositoryProjectFiledOrg.depositoryId == mqti5.depositoryId,
-                                    model_mysql_depositoryProjectFiledOrg.projectId == projectId,
+                                    model_mysql_depositoryProjectFiledOrg.depositoryId == mysql_case5_id.depositoryId,
                                     model_mysql_depositoryProjectFiledOrg.result == 2
                                 ).order_by(model_mysql_depositoryProjectFiledOrg.id.desc()).first()
 
@@ -323,26 +322,27 @@ def autoarchive(projectId):
                                 if mysql_last2 is None:
                                     continue
                                 else:
-                                    #查询other的用例id
+                                    # 查询other的用例id
                                     try:
                                         mysql_other2 = model_mysql_case.query.filter(
                                             model_mysql_case.projectId == mysql_last2.projectId,
                                             model_mysql_case.depositoryId == mysql_last2.depositoryId,
-                                            model_mysql_case.originalCaseId == mqti5.id
-                                        ).all()
+                                            model_mysql_case.originalCaseId == mysql_case5_id.id
+                                        ).first()
                                     except Exception as e:
 
                                         api_logger.error("读取失败，失败原因：" + repr(e))
                                         return route.error_msgs[500]['msg_db_error']
                                     else:
+
                                         if mysql_other2 is None:
                                             continue
                                         else:
                                             # 冲突记录
                                             new_pend2 = model_mysql_projectArchivePendingCase(
                                                 projectId=projectId,
-                                                originalCaseId=mqti5.id,
-                                                projectIdCaseId=list3[count],
+                                                originalCaseId=mysql_case5_id.id,
+                                                projectIdCaseId=mqti4.id,
                                                 otherCaseId=mysql_other2.id,
                                                 status=1
 
@@ -350,5 +350,4 @@ def autoarchive(projectId):
                                             mysqlpool.session.add(new_pend2)
                                             mysqlpool.session.commit()
                                             count += 1
-
-
+    return count
