@@ -15,7 +15,7 @@ from .cases import cases
 from .caseExporFilet import caseExporFilet
 from .caseReview import caseReview
 from .projectArchive import projectArchive
-
+from .caseConflict import caseConflict
 api_project = Blueprint('api_project', __name__)
 
 api = Api(api_project)
@@ -34,3 +34,4 @@ api.add_resource(cases, '/cases.json')
 api.add_resource(caseExporFilet, '/caseExporFilet.json')
 api.add_resource(caseReview, '/caseReview.json')
 api.add_resource(projectArchive, '/projectArchive.json')
+api.add_resource(caseConflict,'/caseConflict.json')
