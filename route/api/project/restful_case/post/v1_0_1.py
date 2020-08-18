@@ -45,6 +45,7 @@ from model.mysql import model_mysql_caseEditLog
     ['casePrecondition', str, None, None],
     ['caseStep', list, 0, None],
     ['files', list, 0, None],
+    ['projectId', int, 1, None]
 
 )
 def key_case_post():
@@ -64,6 +65,7 @@ def key_case_post():
     case_precondition = flask.request.json['casePrecondition']
     case_step = flask.request.json['caseStep']
     files = flask.request.json['files']
+    project_id = flask.request.json['projectId']
 
     # 查目录是否存在
     try:
@@ -110,7 +112,7 @@ def key_case_post():
 
             title=case_title,
             columnId=case_columnId,
-            projectId=mysql_column.projectId,
+            projectId=project_id,
             index=index,
             level=case_level,
             type=2,
@@ -142,7 +144,7 @@ def key_case_post():
 
                     title=case_title,
                     columnId=case_columnId,
-                    projectId=mysql_column.projectId,
+                    projectId=project_id,
                     index=index,
                     level=case_level,
                     type=2,

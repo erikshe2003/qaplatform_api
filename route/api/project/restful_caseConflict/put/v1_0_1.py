@@ -60,8 +60,6 @@ def key_caseConflict_put():
 
     result = flask.request.json['result']
     project_id = flask.request.json['projectId']
-    print(conflict_id)
-    print(result)
 
     if len(conflict_id) != 1:
         # 一键冲突解决
@@ -71,27 +69,30 @@ def key_caseConflict_put():
         id_list = conflict_id
 
         # 批量解决冲突
-        print("批量")
+
         for x in id_list:
             case_info = []
             case_info.append(conflictDtail(x))
-
-            # 根据处理选择解决冲突
-            newcase_id = case_info[0]["detail"][0]["projectIdCase"][0]["id"]
-            newcase_status = case_info[0]["detail"][0]["projectIdCase"][0]["status"]
-            othercase_id = case_info[0]["detail"][0]["otherCase"][0]["id"]
-            othercase_status = case_info[0]["detail"][0]["otherCase"][0]["status"]
-            othercase_index = case_info[0]["detail"][0]["otherCase"][0]["index"]
-            resolveconflict(x, result, newcase_id, newcase_status, othercase_id, othercase_status, othercase_index)
+            try:
+                # 根据处理选择解决冲突
+                newcase_id = case_info[0]["detail"][0]["projectIdCase"][0]["id"]
+                newcase_status = case_info[0]["detail"][0]["projectIdCase"][0]["status"]
+                othercase_id = case_info[0]["detail"][0]["otherCase"][0]["id"]
+                othercase_status = case_info[0]["detail"][0]["otherCase"][0]["status"]
+                othercase_index = case_info[0]["detail"][0]["otherCase"][0]["index"]
+                resolveconflict(x, result, newcase_id, newcase_status, othercase_id, othercase_status, othercase_index)
+            except Exception as e:
+                api_logger.error("读取失败，失败原因：" + repr(e))
+                return route.error_msgs[500]['msg_db_error']
 
 
     else:
         case_info = []
         # 单个冲突解决
         # 获取单个冲突详细信息
-        print("单个")
+
         case_info.append(conflictDtail(int(conflict_id[0])))
-        print(case_info)
+
         try:
             # 根据处理选择解决冲突
             newcase_id = case_info[0]["detail"][0]["projectIdCase"][0]["id"]
@@ -100,13 +101,6 @@ def key_caseConflict_put():
             othercase_id = case_info[0]["detail"][0]["otherCase"][0]["id"]
             othercase_status = case_info[0]["detail"][0]["otherCase"][0]["status"]
             othercase_index = case_info[0]["detail"][0]["otherCase"][0]["index"]
-
-            print(conflict_id)
-            print(result)
-            print(newcase_id)
-            print(newcase_status)
-            print(othercase_id)
-            print(othercase_status)
 
             resolveconflict(int(conflict_id[0]), result, newcase_id, newcase_status, othercase_id, othercase_status,
                             othercase_index)
@@ -235,7 +229,7 @@ def resolveconflict(conflict_id, result, newcase_id, newcase_status, othercase_i
     # 场景2处理情况
     if newcase_status == 3 and othercase_status == 1:
         # 忽略处理
-        print(11111)
+
         if result == 0:
             try:
                 mysql_newcase_info = model_mysql_case.query.filter(
@@ -279,7 +273,7 @@ def resolveconflict(conflict_id, result, newcase_id, newcase_status, othercase_i
                 api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
                 return route.error_msgs[500]['msg_db_error']
             else:
-                print(mysql_othercase_info)
+
                 if mysql_othercase_info is None:
                     return route.error_msgs[201]['msg_no_case']
                 else:
