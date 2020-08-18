@@ -103,9 +103,7 @@ def key_cases_get():
             for mqti in mysql_originalCase_info:
                 originalCase_list.append(mqti.originalCaseId)
 
-
     # 判断keyword是否存在
-
 
     if len(key_word) == 0:
         # 查询满足条件的测试用例编号
@@ -117,15 +115,15 @@ def key_cases_get():
                         and_(
                             model_mysql_case.columnId == column_id,
                             model_mysql_case.depositoryId == depository_id,
-                            model_mysql_case.status == 1,
+                            model_mysql_case.status != -1,
                             model_mysql_case.type == 2,
                             model_mysql_case.arch == 2,
                             model_mysql_case.veri == 3
-                            ),
+                        ),
                         and_(
                             model_mysql_case.columnId == column_id,
                             model_mysql_case.projectId == project_id,
-                            model_mysql_case.status.in_([1,3]),
+                            model_mysql_case.status.in_([1, 3]),
                             model_mysql_case.type == 2
                         )
                     )
@@ -150,17 +148,17 @@ def key_cases_get():
                         and_(
                             model_mysql_case.columnId == column_id,
                             model_mysql_case.depositoryId == depository_id,
-                            model_mysql_case.status == 1,
+                            model_mysql_case.status != -1,
                             model_mysql_case.type == 2,
                             model_mysql_case.arch == 2,
                             model_mysql_case.veri == 3,
-                            ~model_mysql_case.id.in_ (originalCase_list)
+                            ~model_mysql_case.id.in_(originalCase_list)
 
                         ),
                         and_(
                             model_mysql_case.columnId == column_id,
                             model_mysql_case.projectId == project_id,
-                            model_mysql_case.status.in_([1,3]),
+                            model_mysql_case.status.in_([1, 3]),
                             model_mysql_case.type == 2
                         )
                     )
@@ -187,7 +185,7 @@ def key_cases_get():
                         and_(
                             model_mysql_case.columnId == column_id,
                             model_mysql_case.depositoryId == depository_id,
-                            model_mysql_case.status == 1,
+                            model_mysql_case.status != -1,
                             model_mysql_case.type == 2,
                             model_mysql_case.arch == 2,
                             model_mysql_case.veri == 3,
@@ -196,7 +194,7 @@ def key_cases_get():
                         and_(
                             model_mysql_case.columnId == column_id,
                             model_mysql_case.projectId == project_id,
-                            model_mysql_case.status.in_([1,3]),
+                            model_mysql_case.status.in_([1, 3]),
                             model_mysql_case.type == 2,
                             model_mysql_case.title.like('%' + key_word + '%')
                         )
@@ -219,20 +217,20 @@ def key_cases_get():
                         and_(
                             model_mysql_case.columnId == column_id,
                             model_mysql_case.depositoryId == depository_id,
-                            model_mysql_case.status == 1,
+                            model_mysql_case.status != -1,
                             model_mysql_case.type == 2,
                             model_mysql_case.arch == 2,
                             model_mysql_case.veri == 3,
                             model_mysql_case.title.like('%' + key_word + '%'),
-                            ~model_mysql_case.id.in_ (originalCase_list)
+                            ~model_mysql_case.id.in_(originalCase_list)
                         ),
                         and_(
                             model_mysql_case.columnId == column_id,
                             model_mysql_case.projectId == project_id,
-                            model_mysql_case.status.in_([1,3]),
+                            model_mysql_case.status.in_([1, 3]),
                             model_mysql_case.type == 2,
                             model_mysql_case.title.like('%' + key_word + '%')
-                             )
+                        )
                     )
 
                 ).order_by(model_mysql_case.index).all()
