@@ -27,6 +27,8 @@ from model.mysql import model_mysql_functionorg
 # 201请求错误/301传参非法/500系统异常
 error_msgs = {
     201: {
+        'msg_no_conflict_code': {"error_code": 201, "error_msg": "冲突状态异常", "data": {}},
+        'msg_no_conflict': {"error_code": 201, "error_msg": "冲突记录不存在", "data": {}},
         'msg_exit_depositoryarc': {"error_code": 201, "error_msg": "仓库已存在归档项目", "data": {}},
         'msg_exit_arcrecode': {"error_code": 201, "error_msg": "归档记录已存在", "data": {}},
         'msg_no_arcrecode': {"error_code": 201, "error_msg": "归档记录不存在", "data": {}},
