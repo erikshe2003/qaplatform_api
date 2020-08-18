@@ -24,32 +24,34 @@ import time
             校验账户所属角色是否有API操作权限
             校验传参
     ----操作
-            判断用例是否存在
+            判断项目是否存在
             返回操作结果
 """
 
 
-@route.check_user
-@route.check_token
-@route.check_auth
+# @route.check_user
+# @route.check_token
+# @route.check_auth
 @route.check_get_parameter(
-    ['projectId', int, None, None],
-    ['caseList', list, 0, None]
-
+    ['projectId', int, None, None]
 )
 
 
-def key_caseExporFilet_get():
+def key_exportArchive_get():
+    response_json = {
+        "code": 200,
+        "msg": "下载成功",
+        "data": None
+    }
+
     # 初始化返回内容
 
     cases_info=[]
+    cases_id=[]
     count=0
 
     # 取出必传入参
     project_id = flask.request.args['projectId']
-    case_list = flask.request.args['caseList']
-
-    cases_id=case_list.split(',')
 
     #判断项目是否存在，并获取仓库id
     try:
@@ -63,8 +65,28 @@ def key_caseExporFilet_get():
         if mysql_project_info is None:
             return route.error_msgs[201]['msg_no_project']
 
+    #获取全部待评审的case
 
+    try:
+        mysql_case = model_mysql_case.query.filter(
+            model_mysql_case.projectId == project_id,
+            model_mysql_case.type == 2,
+            model_mysql_case.veri == 1,
+            model_mysql_case.status !=-1
+        ).all()
+    except Exception as e:
+        api_logger.error("读取失败，失败原因：" + repr(e))
+        return route.error_msgs[500]['msg_db_error']
+    else:
+        if mysql_case is None:
+            return route.error_msgs[201]['msg_no_case']
+        else:
+            for mq in mysql_case:
 
+                cases_id.append(mq.id)
+
+    if len(cases_id) == 0:
+        return response_json
     #判断用例是否存在并生成用例列表
 
     for id in cases_id:
