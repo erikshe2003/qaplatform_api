@@ -9,7 +9,7 @@ from .project_roleUser import projectroleUser
 from .project_list import projectlist
 from .project_column import projectcolumn
 from .case import case
-from .exportArchive import exportArchive
+from .exportReview import exportReview
 from .caseIndex import caseindex
 from .cases import cases
 from .caseExporFilet import caseExporFilet
@@ -28,7 +28,7 @@ api.add_resource(projectroleUser, '/roleUser.json')
 api.add_resource(projectlist, '/list.json')
 api.add_resource(projectcolumn, '/column.json')
 api.add_resource(case, '/case.json')
-api.add_resource(exportArchive, '/exportArchive.json')
+api.add_resource(exportReview, '/exportReview.json')
 api.add_resource(caseindex, '/caseIndex.json')
 api.add_resource(cases, '/cases.json')
 api.add_resource(caseExporFilet, '/caseExporFilet.json')

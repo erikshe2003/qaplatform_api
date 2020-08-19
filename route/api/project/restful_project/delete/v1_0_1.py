@@ -44,7 +44,9 @@ def key_project_delete():
     # 判断项目是否存在
     try:
         mysql_project_info = model_mysql_project.query.filter(
-            model_mysql_project.id == project_id,model_mysql_project.userId==project_user_id
+            model_mysql_project.id == project_id,
+            model_mysql_project.userId==project_user_id,
+            model_mysql_project.status==1
         ).first()
         api_logger.debug("账户基础信息读取成功")
     except Exception as e:

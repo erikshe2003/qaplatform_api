@@ -56,7 +56,7 @@ def key_projectcolumn_get():
     # 查询项目是否存在
     try:
         mysql_dproject_info = model_mysql_project.query.filter(
-            model_mysql_project.id == project_id,model_mysql_project.status==1
+            model_mysql_project.id == project_id,model_mysql_project.status!=-1
         ).first()
 
 
