@@ -76,3 +76,8 @@ class UserInfo(mysqlpool.Model):
         type_=VARCHAR(100),
         nullable=True
     )
+    userHeadIconUrl = mysqlpool.Column(
+        name="userHeadIconUrl",
+        type_=VARCHAR(200),
+        nullable=True
+    )
