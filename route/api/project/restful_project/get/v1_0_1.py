@@ -55,7 +55,8 @@ def key_project_get():
     # 查询项目基础信息
     try:
         mysql_project_info = model_mysql_project.query.filter(
-            model_mysql_project.id == project_id,model_mysql_project.status==1
+            model_mysql_project.id == project_id,
+            model_mysql_project.status != -1
         ).first()
 
 
