@@ -223,7 +223,7 @@ class PublicMailer:
 
     # 发送修改绑定邮箱申请邮件
     # 需传入新邮箱收件人地址/校验码
-    def sendmail_change_mail(self, old, new, code, operationid):
+    def sendmail_change_mail(self, user_id, old, new, code, operationid):
         # 检查传参合法性
         # to
         if type(new) is str and type(code) is str:
@@ -265,7 +265,7 @@ class PublicMailer:
                             font-size: 15px;background-color: white;border: 1px solid darkgrey;border-radius: 4px;">
                                 <div style="margin-top: 15px;margin-left: 15px;padding-bottom: 10px;">
                                     您正在尝试修改绑定邮箱：
-                                    <a href="%s?mail=%s&newmail=%s&code=%s&operate=%s">点我打开绑定邮箱修改页</a>
+                                    <a href="%s?userId=%s&mail=%s&newMail=%s&code=%s&operate=%s">点我打开绑定邮箱修改页</a>
                                     <div style="margin-left: 10px;padding-bottom: 10px;font-size: 16px;"></div>
                                 </div>
                             </div>
@@ -283,6 +283,7 @@ class PublicMailer:
                 appconfig.get("web", "http") + "://" +
                 appconfig.get("web", "host") + ":" +
                 appconfig.get("web", "port") + appconfig.get("web_url", "changeMail"),
+                str(user_id),
                 parse.quote(old),
                 parse.quote(new),
                 parse.quote(code),

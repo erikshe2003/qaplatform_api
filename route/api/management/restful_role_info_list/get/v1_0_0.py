@@ -54,6 +54,7 @@ def role_info_list_get():
     except Exception as e:
         logmsg = "数据库中角色列表读取失败，失败原因：" + repr(e)
         api_logger.error(logmsg)
+        return route.error_msgs[500]['msg_db_error']
     else:
         # 构造role_list
         for r in rinfo_mysql:
@@ -73,6 +74,7 @@ def role_info_list_get():
     except Exception as e:
         logmsg = "数据库中角色总数读取失败，失败原因：" + repr(e)
         api_logger.error(logmsg)
+        return route.error_msgs[500]['msg_db_error']
     else:
         # 构造total
         response_json["data"]["total"] = total_mysql.roleNum

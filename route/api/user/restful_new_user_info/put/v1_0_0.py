@@ -7,7 +7,6 @@ import route
 
 from handler.api.error import ApiError
 from handler.api.check import ApiCheck
-from handler.sys.saveFile import SaveFile
 from handler.mail import publicmailer
 from handler.pool import mysqlpool
 from handler.log import api_logger

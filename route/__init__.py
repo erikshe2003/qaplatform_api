@@ -22,8 +22,6 @@ from model.mysql import model_mysql_functioninfo
 from model.mysql import model_mysql_functionorg
 
 
-
-
 # 201请求错误/301传参非法/500系统异常
 error_msgs = {
     201: {
@@ -72,6 +70,7 @@ error_msgs = {
         'msg_plan_notopen': {"error_code": 201, "error_msg": "测试计划未开放", "data": {}},
         'msg_plan_user_error': {"error_code": 201, "error_msg": "您不是这个测试计划的所有者", "data": {}},
         'msg_plantype_error': {"error_code": 201, "error_msg": "自动化功能测试任务不支持查看此报告", "data": {}},
+        'msg_operation_alias_not_exist': {"error_code": 201, "error_msg": "关键操作别名不存在", "data": {}},
         'msg_request_file_oversize': {"error_code": 201, "error_msg": "文件大小超出规定", "data": {}},
         'msg_role_is_admin': {"error_code": 201, "error_msg": "管理员角色禁止操作", "data": {}},
         'msg_status_error': {"error_code": 201, "error_msg": "账户状态异常", "data": {}},
@@ -83,7 +82,8 @@ error_msgs = {
         'msg_user_forbidden': {"error_code": 201, "error_msg": "账号已禁用", "data": {}},
         'msg_user_exist': {"error_code": 201, "error_msg": "登录名已被注册", "data": {}},
         'msg_user_cannot_operate': {"error_code": 201, "error_msg": "用户账号禁止操作", "data": {}},
-        'msg_worker_not_exist': {"error_code": 201, "error_msg": "worker不存在", "data": {}}
+        'msg_worker_not_exist': {"error_code": 201, "error_msg": "worker不存在", "data": {}},
+        'msg_mail_send_fail': {"error_code": 201, "error_msg": "邮件发送失败", "data": {}}
     },
     301: {
         'msg_request_params_illegal': {"error_code": 301, "error_msg": "传参格式非法", "data": {}},
@@ -106,7 +106,9 @@ error_msgs = {
         'msg_json_format_fail': {"error_code": 500, "error_msg": "缓存处理失败", "data": {}},
         'msg_no_worker': {"error_code": 500, "error_msg": "当前无可用worker", "data": {}},
         'msg_file_error': {"error_code": 500, "error_msg": "文件操作失败", "data": {}},
-        'msg_deploy_failed': {"error_code": 500, "error_msg": "测试任务下发失败，请尽快联系管理员", "data": {}}
+        'msg_deploy_failed': {"error_code": 500, "error_msg": "测试任务下发失败，请尽快联系管理员", "data": {}},
+        'msg_smtp_error': {"error_code": 500, "error_msg": "SMTP服务器连接失败", "data": {}},
+        'msg_public_mail_login_fail': {"error_code": 500, "error_msg": "SMTP服务器连接失败", "data": {}}
     }
 }
 

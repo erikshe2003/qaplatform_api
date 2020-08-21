@@ -40,6 +40,7 @@ def role_all_permission_get():
     except Exception as e:
         logmsg = "数据库中角色列表读取失败，失败原因：" + repr(e)
         api_logger.error(logmsg)
+        return route.error_msgs[500]['msg_db_error']
     else:
         # 构造角色权限配置清单
         for ap in allp_mysql:

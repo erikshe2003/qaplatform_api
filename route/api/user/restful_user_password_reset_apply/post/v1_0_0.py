@@ -92,7 +92,7 @@ def user_password_reset_apply_post():
     except Exception as e:
         logmsg = "mysql中账户操作数据查询失败，失败原因：" + repr(e)
         api_logger.error(logmsg)
-        return ApiError.requestfail_server(logmsg)
+        return route.error_msgs[500]['msg_db_error']
     for d in data:
         d.recordStatus = -1
     try:
@@ -100,7 +100,7 @@ def user_password_reset_apply_post():
     except Exception as e:
         logmsg = "mysql中账户操作数据更新失败，失败原因：" + repr(e)
         api_logger.error(logmsg)
-        return ApiError.requestfail_server(logmsg)
+        return route.error_msgs[500]['msg_db_error']
     # 生成操作码
     code = str(
         uuid.uuid3(
@@ -123,7 +123,7 @@ def user_password_reset_apply_post():
     except Exception as e:
         logmsg = "mysql中账户操作数据新增失败，失败原因：" + repr(e)
         api_logger.error(logmsg)
-        return ApiError.requestfail_server(logmsg)
+        return route.error_msgs[500]['msg_db_error']
     # 发送重置密码邮件
     publicmailer.sendmail_reset_password(
         uinfo_mysql.userId,

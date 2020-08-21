@@ -48,6 +48,7 @@ def role_delete():
     except Exception as e:
         logmsg = "数据库中账号信息读取失败，失败原因：" + repr(e)
         api_logger.error(logmsg)
+        return route.error_msgs[500]['msg_db_error']
     else:
         # 删
         [mysqlpool.session.delete(rim) for rim in ri_mysql]
@@ -60,6 +61,7 @@ def role_delete():
     except Exception as e:
         logmsg = "数据库中角色权限信息读取失败，失败原因：" + repr(e)
         api_logger.error(logmsg)
+        return route.error_msgs[500]['msg_db_error']
     else:
         # 删
         [mysqlpool.session.delete(rpm) for rpm in rp_mysql]

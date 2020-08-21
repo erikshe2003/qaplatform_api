@@ -4,16 +4,16 @@ import flask
 import re
 import datetime
 import uuid
+import route
 
-from handler.api.error import ApiError
 from handler.api.check import ApiCheck
-from handler.sys.saveFile import SaveFile
 from handler.mail import publicmailer
 from handler.pool import mysqlpool
 from handler.log import api_logger
 from handler.config import appconfig
 
-from model.mysql import model_mysql_userinfo, model_mysql_useroperationrecord
+from model.mysql import model_mysql_userinfo
+from model.mysql import model_mysql_useroperationrecord
 
 
 # 基础信息修改-api路由
@@ -29,6 +29,15 @@ from model.mysql import model_mysql_userinfo, model_mysql_useroperationrecord
 # 6.保存账户头像
 # 7.修改账户昵称/个人简介
 # 9.返回成功信息
+@route.check_token
+@route.check_user
+@route.check_get_parameter(
+    ['fileUrl', str, 1, None],
+    ['userId', int, 1, None],
+    ['newMailAddress', str, 1, 100],
+    ['nickName', str, 1, 100],
+    ['introduceContent', str, 1, 200]
+)
 def user_info_put():
     # 初始化返回内容
     response_json = {
@@ -37,101 +46,60 @@ def user_info_put():
         "data": {}
     }
 
-    # 1.校验传参
-    # 取出请求参数
+    # 取出参数
+    rq_file_url = flask.request.json['fileUrl']
+    rq_user_id = flask.request.json['userId']
+    rq_new_mail_address = flask.request.json['newMailAddress']
+    rq_nick_name = flask.request.json['nickName']
+    rq_introduce = flask.request.json['introduceContent']
+
+    # 校验传参
+    # new_mail_address
+    mail_reg = '^([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+@([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+\.[a-zA-Z]{2,3}$'
+    if not re.search(mail_reg, rq_new_mail_address):
+        return route.error_msgs[301]['msg_value_type_error']
+
+    # 如果邮箱变更了，则需要检查新邮箱是否已被注册
+    # 在库中获取账户信息，准备修改新邮箱信息
     try:
-        request_form = flask.request.form
-        request_file = flask.request.files["file"]
+        user_info = model_mysql_userinfo.query.filter_by(
+            userId=rq_user_id
+        ).first()
     except Exception as e:
-        logmsg = "/setBaseInfo.json数据格式化失败，失败原因：" + repr(e)
-        api_logger.error(logmsg)
-        return ApiError.requestfail_error("接口数据异常")
-    # 检查必传项是否遗留
-    # mail_address
-    if "mail_address" not in request_form:
-        return ApiError.requestfail_nokey("mail_address")
-    # new_mail_address
-    if "new_mail_address" not in request_form:
-        return ApiError.requestfail_nokey("new_mail_address")
-    # nick_name
-    if "nick_name" not in request_form:
-        return ApiError.requestfail_nokey("nick_name")
-    # introduce_content
-    if "introduce_content" not in request_form:
-        return ApiError.requestfail_nokey("introduce_content")
-    # user_token
-    if "user_token" not in request_form:
-        return ApiError.requestfail_nokey("user_token")
-    # 检查通过
-    # 检查必传项内容格式
-    # mail_address
-    if type(request_form["mail_address"]) is not str or len(request_form["mail_address"]) > 100:
-        return ApiError.requestfail_value("mail_address")
-    if re.search("^[0-9a-zA-Z_]{1,100}@fclassroom.com$", request_form["mail_address"]) is None:
-        return ApiError.requestfail_value("mail_address")
-    # new_mail_address
-    if type(request_form["new_mail_address"]) is not str or len(request_form["new_mail_address"]) > 100:
-        return ApiError.requestfail_value("new_mail_address")
-    if re.search("^[0-9a-zA-Z_]{1,100}@fclassroom.com$", request_form["new_mail_address"]) is None:
-        return ApiError.requestfail_value("new_mail_address")
-    # nick_name
-    if type(request_form["nick_name"]) is not str or len(request_form["nick_name"]) > 100:
-        return ApiError.requestfail_value("nick_name")
-    # introduce_content
-    if type(request_form["introduce_content"]) is not str or len(request_form["introduce_content"]) > 200:
-        return ApiError.requestfail_value("introduce_content")
-    # file
-    if "image" in request_file.content_type:
-        default = 1
-    elif request_file.filename == 'defaultIcon':
-        default = 0
-    elif request_file.filename == 'userDefaultIcon':
-        default = 2
+        api_logger.error("数据库账户数据查询失败，失败原因：" + repr(e))
+        return route.error_msgs[500]['msg_db_error']
     else:
-        return ApiError.requestfail_value("file")
-    # 由于FileStorage进行read操作后内容会置空，故只能临时处理
-    requestvalue_file = request_file.read()
-    if len(requestvalue_file) > 500*1024:
-        return ApiError.requestfail_value("file")
-    # 检查通过
-
-    # 取出传入参数值
-    requestvalue_mail = request_form["mail_address"]
-    requestvalue_newmail = request_form["new_mail_address"]
-    requestvalue_nickname = request_form["nick_name"]
-    requestvalue_introduction = request_form["introduce_content"]
-    requestvalue_default = default
-
-    # 2.校验账户是否存在
-    userdata = ApiCheck.check_user(requestvalue_mail)
-    if userdata["exist"] is False:
-        return ApiError.requestfail_error("账户不存在")
-    elif userdata["exist"] is True and userdata["userStatus"] == 1:
-        pass
-    elif userdata["exist"] is True and userdata["userStatus"] == 0:
-        return ApiError.requestfail_error("账户未激活")
-    elif userdata["exist"] is True and userdata["userStatus"] == -1:
-        return ApiError.requestfail_error("账户已禁用")
-    else:
-        return ApiError.requestfail_error("账户信息校验异常")
-
-    if requestvalue_mail == requestvalue_newmail:
-        # 定义msg
-        response_json["error_msg"] = "基础信息修改成功"
-    else:
-        # 3.校验新账户是否存在，排除存在的场景
-        newuserdata = ApiCheck.check_user(requestvalue_newmail)
-        if newuserdata["exist"] is False:
+        # 校验账户状态
+        # 仅状态正常的账户支持信息修改
+        if user_info is None:
+            return route.error_msgs[201]['msg_no_user']
+        elif user_info.userStatus == 1:
             pass
-        elif newuserdata["exist"] is True:
-            return ApiError.requestfail_error("新绑定邮箱已被注册")
+        elif user_info.userStatus == 0:
+            return route.error_msgs[201]['msg_need_register']
+        elif user_info.userStatus == -1:
+            return route.error_msgs[201]['msg_user_forbidden']
         else:
-            return ApiError.requestfail_error("新绑定邮箱信息校验异常")
+            return route.error_msgs[500]['msg_server_error']
 
-        # 4.如果邮箱账户未变化，则不发送更改邮箱地址的邮件，不进行此操作
+    # 检查传递邮箱
+    # 如果已被注册则返回错误信息
+    # 如果未被注册则将新邮箱地址入库并发送确认邮件
+    if user_info.userEmail != rq_new_mail_address:
+        # 校验新账户是否存在，排除存在的场景
+        try:
+            newuserdata = model_mysql_userinfo.query.filter_by(
+                userEmail=rq_new_mail_address
+            ).first()
+        except Exception as e:
+            api_logger.error("数据库账户数据查询失败，失败原因：" + repr(e))
+            return route.error_msgs[500]['msg_db_error']
+        else:
+            if newuserdata is not None:
+                return route.error_msgs[201]['msg_mail_exist']
 
-        # 5.如果账户不存在，则提前生成操作码，尝试发送修改邮箱确认邮件。如果邮件发送
-        # 成功，则在账号表中新增/覆盖userNewEmail字段内容
+        # 生成操作码，尝试发送修改邮箱确认邮件
+        # 如果邮件发送成功，则在账号表中新增/覆盖userNewEmail字段内容
         # 查询关键操作唯一标识符
         odata = ApiCheck.check_operate(
             appconfig.get("operation_alias", "changeMail")
@@ -139,78 +107,60 @@ def user_info_put():
         if odata["exist"] is True:
             pass
         elif odata["exist"] is False:
-            return ApiError.requestfail_error("关键操作别名不存在")
+            return route.error_msgs[201]['msg_operation_alias_not_exist']
         else:
-            return ApiError.requestfail_server("操作处理异常")
-        if newuserdata["exist"] is False:
-            # 提前生成操作码
-            code = str(
-                uuid.uuid3(
-                    uuid.NAMESPACE_DNS, requestvalue_mail + str(
-                        datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                    )
+            return route.error_msgs[500]['msg_server_error']
+
+        # 生成操作码
+        code = str(
+            uuid.uuid3(
+                uuid.NAMESPACE_DNS, rq_new_mail_address + str(
+                    datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 )
             )
-            # 发送包含账户信息确认页链接的邮件
-            # 先发送邮件，成功后再记录数据
-            # 保证过滤掉不存在的邮件地址
-            send_result_flag, send_result_type = publicmailer.sendmail_change_mail(
-                requestvalue_mail,
-                requestvalue_newmail,
-                code,
-                3
-            )
-            # 如果发送失败，则返回错误信息
-            if send_result_flag is False:
-                if send_result_type == -1:
-                    return ApiError.requestfail_server("SMTP服务器连接失败")
-                elif send_result_type == 1 or send_result_type == 2:
-                    return ApiError.requestfail_server("公共邮箱登陆失败")
-                elif send_result_type == 3:
-                    return ApiError.requestfail_error("邮件发送失败，请检查邮箱地址")
-            # 在库中获取账户信息，准备修改新邮箱信息
+        )
+        # 发送包含账户信息确认页链接的邮件
+        # 先发送邮件，成功后再记录数据
+        # 保证过滤掉不存在的邮件地址
+        send_result_flag, send_result_type = publicmailer.sendmail_change_mail(
+            rq_user_id,
+            user_info.userEmail,
+            rq_new_mail_address,
+            code,
+            3
+        )
+        # 如果发送失败，则返回错误信息
+        if send_result_flag is False:
+            if send_result_type == -1:
+                return route.error_msgs[500]['msg_smtp_error']
+            elif send_result_type == 1 or send_result_type == 2:
+                return route.error_msgs[500]['msg_public_mail_login_fail']
+            elif send_result_type == 3:
+                return route.error_msgs[201]['msg_mail_send_fail']
+        else:
+            # 修改操作记录，将之前的修改绑定邮箱的操作记录置为-1
             try:
-                user = model_mysql_userinfo.query.filter_by(
-                    userId=userdata["userId"]
-                ).first()
+                rdata_mysql = model_mysql_useroperationrecord.query.filter_by(
+                    userId=user_info.userId,
+                    operationId=odata["operationId"],
+                    recordStatus=0
+                ).all()
             except Exception as e:
-                logmsg = "数据库账户数据查询失败，失败原因：" + repr(e)
-                api_logger.error(logmsg)
-                return ApiError.requestfail_server(logmsg)
-            else:
-                # 修改其新邮件地址信息
-                user.userNewEmail = requestvalue_newmail
-                # 然后更新
+                api_logger.error("账户操作记录数据查询失败，失败原因：" + repr(e))
+                return route.error_msgs[500]['msg_db_error']
+            # 如果查询到了，则全部置为无效
+            if rdata_mysql is not None:
+                for d in rdata_mysql:
+                    d.recordStatus = -1
                 try:
                     mysqlpool.session.commit()
                 except Exception as e:
-                    logmsg = "mysql中账户操作记录更新失败，失败原因：" + repr(e)
-                    api_logger.error(logmsg)
-                    return ApiError.requestfail_server(logmsg)
-                # 8.修改操作记录，将之前的修改绑定邮箱的操作记录置为-1
-                try:
-                    rdata_mysql = model_mysql_useroperationrecord.query.filter_by(
-                        userId=userdata["userId"],
-                        operationId=odata["operationId"],
-                        recordStatus=0
-                    ).all()
-                except Exception as e:
-                    logmsg = "账户操作记录数据查询失败，失败原因：" + repr(e)
-                    api_logger.error(logmsg)
-                    return ApiError.requestfail_server(logmsg)
-                # 如果查询到了，则全部置为无效
-                if rdata_mysql is not None:
-                    for d in rdata_mysql:
-                        d.recordStatus = -1
-                    try:
-                        mysqlpool.session.commit()
-                    except Exception as e:
-                        logmsg = "账户操作记录数据更新失败，失败原因：" + repr(e)
-                        api_logger.error(logmsg)
-                        return ApiError.requestfail_server(logmsg)
-            # 将操作码数据写入mysql
+                    api_logger.error("账户操作记录数据更新失败，失败原因：" + repr(e))
+                    return route.error_msgs[500]['msg_db_error']
+
+            # 将新的操作码数据写入mysql
             insertdata = model_mysql_useroperationrecord(
-                userId=userdata["userId"],
+                userId=user_info.userId,
                 operationId=odata["operationId"],
                 recordCode=code,
                 recordStatus=0,
@@ -222,32 +172,27 @@ def user_info_put():
             except Exception as e:
                 logmsg = "数据库新增申请修改绑定邮箱记录数据失败，失败原因：" + repr(e)
                 api_logger.error(logmsg)
-                return ApiError.requestfail_server(logmsg)
+                return route.error_msgs[500]['msg_db_error']
+
+        # 修改其新邮件地址信息
+        user_info.userNewEmail = rq_new_mail_address
+
+        # 变更邮箱需要变更返回信息
         response_json["error_msg"] = "基础信息修改成功，请于新邮箱查收修改绑定邮箱确认邮件"
-
-    # 6.保存账户头像
-    if requestvalue_default == 2:
-        pass
     else:
-        SaveFile.save_icon(requestvalue_file, requestvalue_mail, requestvalue_default)
+        # 返回普通成功信息
+        response_json["error_msg"] = "基础信息修改成功"
 
-    # 7.修改账户昵称/个人简介
-    try:
-        user = model_mysql_userinfo.query.filter_by(userId=userdata["userId"]).first()
-    except Exception as e:
-        logmsg = "/setBaseInfo.json账户信息读取失败，失败原因：" + repr(e)
-        api_logger.error(logmsg)
-        return ApiError.requestfail_server(logmsg)
-    user.userNickName = requestvalue_nickname
-    user.userIntroduction = requestvalue_introduction
+    # 修改头像地址/昵称/简介
+    user_info.userHeadIconUrl = rq_file_url
+    user_info.userNickName = rq_nick_name
+    user_info.userIntroduction = rq_introduce
     # 尝试写入mysql
     try:
         mysqlpool.session.commit()
     except Exception as e:
-        logmsg = "/setBaseInfo.json账户信息存入数据库失败，失败原因：" + repr(e)
-        api_logger.error(logmsg)
-        return ApiError.requestfail_server(logmsg)
+        api_logger.error("账户信息存入数据库失败，失败原因：" + repr(e))
+        return route.error_msgs[500]['msg_db_error']
 
-    # 8.返回成功信息
     # 最后返回内容
     return response_json
