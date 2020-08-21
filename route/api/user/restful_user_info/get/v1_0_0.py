@@ -36,7 +36,8 @@ def user_info_get():
             "nick_name": '',
             "mail_address": '',
             "new_mail_address": '',
-            "introduction": ''
+            "introduction": '',
+            "icon_url": ''
         }
     }
 
@@ -51,6 +52,7 @@ def user_info_get():
             model_mysql_userinfo.userEmail,
             model_mysql_userinfo.userNewEmail,
             model_mysql_userinfo.userIntroduction,
+            model_mysql_userinfo.userHeadIconUrl,
             model_mysql_useroperationrecord.recordId
         ).outerjoin(
             model_mysql_useroperationrecord,
@@ -66,12 +68,14 @@ def user_info_get():
     except Exception as e:
         logmsg = "数据库中账户信息读取失败，失败原因：" + repr(e)
         api_logger.error(logmsg)
+        return route.error_msgs[500]['msg_db_error']
     else:
         response_json["data"]["user_id"] = uinfo_mysql.userId
         response_json["data"]["nick_name"] = uinfo_mysql.userNickName
         response_json["data"]["mail_address"] = uinfo_mysql.userEmail
         response_json["data"]["new_mail_address"] = uinfo_mysql.userNewEmail if uinfo_mysql.recordId else None
         response_json["data"]["introduction"] = uinfo_mysql.userIntroduction
+        response_json["data"]["icon_url"] = uinfo_mysql.userHeadIconUrl
 
     # 8.返回成功信息
     response_json["error_msg"] = "操作成功"

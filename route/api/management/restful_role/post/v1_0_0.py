@@ -105,14 +105,19 @@ def role_post():
     """ 
         4.新增角色基础信息
     """
-    new_role_info = model_mysql_roleinfo(
-        roleName=requestvalue_rolename,
-        roleDescription=requestvalue_roledescription,
-        roleIsAdmin=0,
-        roleStatus=1
-    )
-    mysqlpool.session.add(new_role_info)
-    mysqlpool.session.commit()
+    try:
+        new_role_info = model_mysql_roleinfo(
+            roleName=requestvalue_rolename,
+            roleDescription=requestvalue_roledescription,
+            roleIsAdmin=0,
+            roleStatus=1
+        )
+        mysqlpool.session.add(new_role_info)
+        mysqlpool.session.commit()
+    except Exception as e:
+        logmsg = "数据库中账号信息写入失败，失败原因：" + repr(e)
+        api_logger.error(logmsg)
+        return route.error_msgs[500]['msg_db_error']
 
     """
         5.新增角色权限配置信息
@@ -126,7 +131,6 @@ def role_post():
             hasPermission=page_has_permission
         )
         mysqlpool.session.add(page_role_permission)
-        mysqlpool.session.commit()
 
         # 新增component权限
         for functionid_component in requestvalue_permission[functionid_page]["component"]:
@@ -138,7 +142,13 @@ def role_post():
                 hasPermission=component_has_permission
             )
             mysqlpool.session.add(component_role_permission)
-            mysqlpool.session.commit()
+
+    try:
+        mysqlpool.session.commit()
+    except Exception as e:
+        logmsg = "数据库中账号信息写入失败，失败原因：" + repr(e)
+        api_logger.error(logmsg)
+        return route.error_msgs[500]['msg_db_error']
 
     """
         6.新增redis中的该角色的权限缓存数据(前端权限数据)
@@ -162,6 +172,7 @@ def role_post():
     except Exception as e:
         logmsg = "数据库中角色权限信息修改后页面权限配置信息读取失败，失败原因：" + repr(e)
         api_logger.error(logmsg)
+        return route.error_msgs[500]['msg_db_error']
     else:
         """拼接待缓存的权限数据
             格式：
@@ -208,6 +219,7 @@ def role_post():
             except Exception as e:
                 logmsg = "数据库中角色权限信息修改后功能权限配置信息读取失败，失败原因：" + repr(e)
                 api_logger.error(logmsg)
+                return route.error_msgs[500]['msg_db_error']
             else:
                 for component_permission in role_component_permission_data:
                     permission[str(page_permission.functionId)]["component"][
@@ -227,6 +239,7 @@ def role_post():
         except Exception as e:
             logmsg = "缓存库中角色权限信息写入失败，失败原因：" + repr(e)
             api_logger.error(logmsg)
+            return route.error_msgs[500]['msg_db_error']
 
     """
         7.新增redis中的该角色的权限缓存数据(后端权限数据)
@@ -251,6 +264,7 @@ def role_post():
     except Exception as e:
         logmsg = "数据库中角色权限信息修改后页面权限配置信息读取失败，失败原因：" + repr(e)
         api_logger.error(logmsg)
+        return route.error_msgs[500]['msg_db_error']
     else:
         """
             拼接待缓存的权限数据
@@ -278,6 +292,7 @@ def role_post():
         except Exception as e:
             logmsg = "缓存库中角色权限信息写入失败，失败原因：" + repr(e)
             api_logger.error(logmsg)
+            return route.error_msgs[500]['msg_db_error']
 
     # 返回成功信息
     response_json["error_msg"] = "操作成功"

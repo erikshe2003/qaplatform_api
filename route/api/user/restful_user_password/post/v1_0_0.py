@@ -76,14 +76,14 @@ def user_password_post():
     except Exception as e:
         logmsg = "mysql中账户信息读取失败，失败原因：" + repr(e)
         api_logger.error(logmsg)
-        return ApiError.requestfail_server(logmsg)
+        return route.error_msgs[500]['msg_db_error']
     uinfo_mysql.userPassword = requestvalue_password
     try:
         mysqlpool.session.commit()
     except Exception as e:
         logmsg = "mysql中账户密码更新失败，失败原因：" + repr(e)
         api_logger.error(logmsg)
-        return ApiError.requestfail_server(logmsg)
+        return route.error_msgs[500]['msg_db_error']
 
     # 5.将重置密码的记录置为已完成
     try:
@@ -95,14 +95,14 @@ def user_password_post():
     except Exception as e:
         logmsg = "mysql中账户操作记录读取失败，失败原因：" + repr(e)
         api_logger.error(logmsg)
-        return ApiError.requestfail_server(logmsg)
+        return route.error_msgs[500]['msg_db_error']
     uodata.recordStatus = 1
     try:
         mysqlpool.session.commit()
     except Exception as e:
         logmsg = "mysql中账户操作记录更新失败，失败原因：" + repr(e)
         api_logger.error(logmsg)
-        return ApiError.requestfail_server(logmsg)
+        return route.error_msgs[500]['msg_db_error']
 
     # 6.发送重置密码成功邮件
     publicmailer.sendmail_reset_password_success(

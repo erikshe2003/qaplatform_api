@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import flask
-import json
 import route
 
 from handler.pool import mysqlpool
@@ -41,7 +40,7 @@ def user_password_put():
     }
 
     # 取出参数
-    mail_address = flask.request.headers['Mail']
+    user_id = flask.request.headers['UserId']
     old_password = flask.request.json['oldPassword']
     new_password = flask.request.json['newPassword']
     confirm_password = flask.request.json['confirmPassword']
@@ -53,17 +52,16 @@ def user_password_put():
     # 查找账户id以及旧密码
     try:
         mysql_user_info = model_mysql_userinfo.query.filter(
-            model_mysql_userinfo.userEmail == mail_address
+            model_mysql_userinfo.userId == user_id
         ).first()
-        db_logger.debug(mail_address + "的账户基础信息读取成功")
+        db_logger.debug("账户基础信息读取成功")
     except Exception as e:
-        db_logger.error(mail_address + "的账户基础信息读取失败，失败原因：" + repr(e))
+        db_logger.error("账户基础信息读取失败，失败原因：" + repr(e))
         return route.error_msgs[500]['msg_db_error']
     else:
         if mysql_user_info is None:
             return route.error_msgs[201]['msg_no_user']
         else:
-            user_id = mysql_user_info.userId
             user_pass = mysql_user_info.userPassword
 
     # 根据userId查询旧密码，并判断一致性
@@ -71,14 +69,12 @@ def user_password_put():
         return route.error_msgs[201]['msg_old_password_incorrect']
     else:
         # 更新mysql密码
-        mysql_new_user_info = model_mysql_userinfo.query.filter(
-            model_mysql_userinfo.userId == user_id
-        ).first()
-        mysql_new_user_info.userPassword = new_password
+        mysql_user_info.userPassword = new_password
         try:
             mysqlpool.session.commit()
+            db_logger.debug("账户基础信息修改成功")
         except Exception as e:
-            db_logger.error(mail_address + "的账户基础信息更新失败，失败原因：" + repr(e))
+            db_logger.error("账户基础信息更新失败，失败原因：" + repr(e))
             return route.error_msgs[500]['msg_db_error']
 
     # 最后返回内容

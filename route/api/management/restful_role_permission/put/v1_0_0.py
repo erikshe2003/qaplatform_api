@@ -131,6 +131,7 @@ def role_permission_put():
         except Exception as e:
             logmsg = "数据库中角色的page访问权限获取失败：" + repr(e)
             api_logger.error(logmsg)
+            return route.error_msgs[500]['msg_db_error']
         else:
             """
                 如果获取到了，且数据库中记录的hasPermission字段值和传入的page的has值不等
@@ -155,6 +156,7 @@ def role_permission_put():
                         except Exception as e:
                             logmsg = "数据库中角色的页面下功能访问权限获取失败：" + repr(e)
                             api_logger.error(logmsg)
+                            return route.error_msgs[500]['msg_db_error']
                         else:
                             if cp_data:
                                 cp_data.hasPermission = 0
@@ -181,6 +183,7 @@ def role_permission_put():
                         except Exception as e:
                             logmsg = "数据库中角色的页面下功能访问权限获取失败：" + repr(e)
                             api_logger.error(logmsg)
+                            return route.error_msgs[500]['msg_db_error']
                         else:
                             # 如果component的权限配置数据有，并且数据库中记录的权限配置和传入的数据不一致
                             if cp_data and cp_data.hasPermission != component_has:
@@ -214,6 +217,7 @@ def role_permission_put():
                     except Exception as e:
                         logmsg = "数据库中角色的页面下功能访问权限获取失败：" + repr(e)
                         api_logger.error(logmsg)
+                        return route.error_msgs[500]['msg_db_error']
                     else:
                         # 如果component的权限配置数据有，并且数据库中记录的权限配置和传入的数据不一致
                         if cp_data and cp_data.hasPermission != component_has:
@@ -254,6 +258,7 @@ def role_permission_put():
                     except Exception as e:
                         logmsg = "数据库中角色的页面下功能访问权限获取失败：" + repr(e)
                         api_logger.error(logmsg)
+                        return route.error_msgs[500]['msg_db_error']
                     else:
                         # 如果component权限配置数据有且和传入的不一致
                         if cp_data and cp_data.hasPermission != component_has:
@@ -308,6 +313,7 @@ def role_permission_put():
     except Exception as e:
         logmsg = "数据库中角色权限信息修改后页面权限配置信息读取失败，失败原因：" + repr(e)
         api_logger.error(logmsg)
+        return route.error_msgs[500]['msg_db_error']
     else:
         """拼接待缓存的权限数据
             格式：
@@ -354,6 +360,7 @@ def role_permission_put():
             except Exception as e:
                 logmsg = "数据库中角色权限信息修改后功能权限配置信息读取失败，失败原因：" + repr(e)
                 api_logger.error(logmsg)
+                return route.error_msgs[500]['msg_db_error']
             else:
                 for component_permission in role_component_permission_data:
                     permission[str(page_permission.functionId)]["component"][str(component_permission.functionId)] = {
@@ -372,6 +379,7 @@ def role_permission_put():
         except Exception as e:
             logmsg = "缓存库中角色权限信息写入失败，失败原因：" + repr(e)
             api_logger.error(logmsg)
+            return route.error_msgs[500]['msg_db_error']
 
     # 将缓存中的旧数据替换为新数据
     try:
@@ -393,6 +401,7 @@ def role_permission_put():
     except Exception as e:
         logmsg = "数据库中角色权限信息修改后页面权限配置信息读取失败，失败原因：" + repr(e)
         api_logger.error(logmsg)
+        return route.error_msgs[500]['msg_db_error']
     else:
         """
             拼接待缓存的权限数据
@@ -420,6 +429,7 @@ def role_permission_put():
         except Exception as e:
             logmsg = "缓存库中角色权限信息写入失败，失败原因：" + repr(e)
             api_logger.error(logmsg)
+            return route.error_msgs[500]['msg_db_error']
 
     # 8.返回成功信息
     response_json["error_msg"] = "操作成功"
