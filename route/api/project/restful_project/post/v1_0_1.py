@@ -69,7 +69,9 @@ def key_project_post():
     # 查询项目名称是否存在
     try:
         mysql_project = model_mysql_project.query.filter(
-            model_mysql_project.name == project_name, model_mysql_project.depositoryId == project_depositoryId
+            model_mysql_project.name == project_name,
+            model_mysql_project.depositoryId == project_depositoryId,
+            model_mysql_project.status!=-1
         ).first()
     except Exception as e:
         api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
@@ -100,7 +102,9 @@ def key_project_post():
     # 获取项目id
     try:
         mysql_depository_info = model_mysql_project.query.filter(
-            model_mysql_project.name == project_name, model_mysql_project.depositoryId == project_depositoryId
+            model_mysql_project.name == project_name,
+            model_mysql_project.depositoryId == project_depositoryId,
+            model_mysql_project.status != -1
         ).first()
     except Exception as e:
         api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))

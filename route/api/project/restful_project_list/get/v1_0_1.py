@@ -39,17 +39,20 @@ def key_projectlist_get():
     }
 
     project_id=flask.request.args['id']
+    print(project_id)
 
     #查询符合条件的项目并获得仓库id
     try:
         mysql_project_info = model_mysql_project.query.filter(
-            model_mysql_project.id ==project_id,model_mysql_project.status==1
+            model_mysql_project.id == project_id,
+            model_mysql_project.status != -1
         ).first()
 
     except Exception as e:
         api_logger.error("model_mysql_depository，失败原因：" + repr(e))
         return route.error_msgs[500]['msg_db_error']
     if mysql_project_info is None:
+        print(111)
         return route.error_msgs[201]['msg_no_project']
     else:
         depository_Id=mysql_project_info.depositoryId
@@ -57,13 +60,16 @@ def key_projectlist_get():
     #查询符合条件的项目
     try:
         mysql_projects_info = model_mysql_project.query.filter(
-            model_mysql_project.depositoryId ==depository_Id,model_mysql_project.status==1
+            model_mysql_project.depositoryId ==depository_Id,
+            model_mysql_project.status != -1,
+            model_mysql_project.id !=project_id
         ).all()
 
     except Exception as e:
         api_logger.error("model_mysql_depository，失败原因：" + repr(e))
         return route.error_msgs[500]['msg_db_error']
     if mysql_projects_info is None:
+        print(2222)
         return route.error_msgs[201]['msg_no_project']
     else:
         for mqti in mysql_projects_info:

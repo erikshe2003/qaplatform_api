@@ -292,7 +292,7 @@ def key_cases_get():
         try:
             mysql_caseFile_info = model_mysql_caseFile.query.filter(
                 model_mysql_caseFile.caseId == case_id, model_mysql_caseFile.status == 1
-            ).first()
+            ).all()
         except Exception as e:
             api_logger.error("读取失败，失败原因：" + repr(e))
             return route.error_msgs[500]['msg_db_error']

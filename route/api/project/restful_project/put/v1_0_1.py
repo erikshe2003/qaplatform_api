@@ -54,7 +54,8 @@ def key_project_put():
      # 查询项目名称是否存在
     try:
         mysql_project = model_mysql_project.query.filter(
-            model_mysql_project.id==project_id,model_mysql_project.status==1
+            model_mysql_project.id==project_id,
+            model_mysql_project.status==1
         ).first()
     except Exception as e:
         api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
