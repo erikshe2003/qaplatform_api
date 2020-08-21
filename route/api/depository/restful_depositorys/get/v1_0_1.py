@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import flask
-
 import route
 
 from handler.log import api_logger
@@ -16,8 +14,8 @@ from model.mysql import model_mysql_depository
             校验账户所属角色是否有API操作权限
             校验传参
     ----操作
-
-            返回测试项目基础信息
+            权限人员才可见
+            返回仓库列表
 """
 
 

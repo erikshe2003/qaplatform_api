@@ -29,15 +29,15 @@ import time
 """
 
 
-# @route.check_user
-# @route.check_token
-# @route.check_auth
+@route.check_user
+@route.check_token
+@route.check_auth
 @route.check_get_parameter(
     ['projectId', int, None, None]
 )
 
 
-def key_exportArchive_get():
+def key_exportReview_get():
     response_json = {
         "code": 200,
         "msg": "下载成功",

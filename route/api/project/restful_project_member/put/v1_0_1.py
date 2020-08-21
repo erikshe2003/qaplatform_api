@@ -77,13 +77,15 @@ def key_projectmember_put():
             return route.error_msgs[500]['msg_db_error']
         else:
             if mysql_user_info is None:
-                continue
+               pass
+
             else:
-                pass
+                continue
 
 
         # 查询用户是否已经是项目成员
         try:
+
             mysql_projectMember_info= model_mysql_projectMember.query.filter(
                 model_mysql_projectMember.projectId == project_id, model_mysql_projectMember.userId == int(x)
             ).first()
@@ -97,7 +99,7 @@ def key_projectmember_put():
 
                     projectId=project_id,
                     userId=int(x),
-                    type=1,
+                    type=2,
                     status=1
 
                 )
@@ -109,4 +111,5 @@ def key_projectmember_put():
 
 
     # 最后返回内容
+
     return response_json

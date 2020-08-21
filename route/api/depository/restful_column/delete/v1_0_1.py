@@ -29,7 +29,7 @@ from model.mysql import model_mysql_case
 @route.check_auth
 @route.check_delete_parameter(
 
-    ['id', str, 1, 200]
+    ['id', int, 1, None]
 )
 
 def key_column_delete():
