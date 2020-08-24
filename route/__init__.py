@@ -7,6 +7,7 @@ import datetime
 import uuid
 
 from functools import wraps
+from urllib import parse
 
 from handler.log import api_logger
 from handler.pool import mysqlpool
@@ -397,7 +398,7 @@ def check_auth(func):
         if 'UserId' not in flask.request.headers:
             return error_msgs[302]['msg_request_params_incomplete']
         user_id = flask.request.headers['UserId']
-        api_url = flask.request.url
+        api_url = parse.urlparse(flask.request.url).path
         # 取出账户所属roleId
         # 首先查询账户信息，尝试取出roleId
         api_logger.debug("准备查询账户数据")
@@ -424,8 +425,7 @@ def check_auth(func):
                         api_logger.error("缓存api访问权限数据json格式化失败，失败原因：" + repr(e))
                         return error_msgs[500]['msg_db_error']
                     else:
-                        if api_url.split('/')[-1] in redis_apiauth_json and redis_apiauth_json[api_url.split(
-                                '/')[-1]] != 1:
+                        if api_url not in redis_apiauth_json or redis_apiauth_json[api_url] != 1:
                             return error_msgs[201]['msg_no_auth']
                 # 如果redis中未查询到
                 else:
