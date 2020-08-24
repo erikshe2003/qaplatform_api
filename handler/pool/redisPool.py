@@ -11,13 +11,15 @@ try:
         host=databaseconfig.get("redis", "host"),
         port=int(databaseconfig.get("redis", "port")),
         password=databaseconfig.get("redis", "password") if databaseconfig.get("redis", "password") else None,
-        max_connections=int(databaseconfig.get("redis", "max_connections"))
+        max_connections=int(databaseconfig.get("redis", "max_connections")),
+        health_check_interval=30
     )
     pool_1 = ConnectionPool(
         host=databaseconfig.get("redis", "host"),
         port=int(databaseconfig.get("redis", "port")),
         password=databaseconfig.get("redis", "password") if databaseconfig.get("redis", "password") else None,
         max_connections=int(databaseconfig.get("redis", "max_connections")),
+        health_check_interval=30,
         db=1
     )
     redispool = Redis(connection_pool=pool)

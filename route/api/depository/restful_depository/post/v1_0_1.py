@@ -29,19 +29,16 @@ from model.mysql import model_mysql_case
 @route.check_token
 @route.check_auth
 @route.check_post_parameter(
-
     ['name', str, 1, 50],
     ['description', str, 0, 250],
-
 )
-
 def key_depository_post():
     # 初始化返回内容
     response_json = {
-    "code": 200,
-    "msg": "数据新增成功",
-    "data": None
-   }
+        "code": 200,
+        "msg": "数据新增成功",
+        "data": {}
+    }
 
     # 取出必传入参
     request_user_id = flask.request.headers['UserId']
@@ -60,23 +57,6 @@ def key_depository_post():
     else:
         if mysql_userinfo is None:
             return route.error_msgs[201]['msg_no_user']
-    #目前仓库权限仅对管理员开发
-    try:
-        mysql_roleinfo = model_mysql_roleinfo.query.filter(
-            model_mysql_roleinfo.roleId == mysql_userinfo.userRoleId
-        ).first()
-        api_logger.debug("账户基础信息读取成功")
-    except Exception as e:
-        api_logger.error("账户基础信息读取失败，失败原因：" + repr(e))
-        return route.error_msgs[500]['msg_db_error']
-    else:
-        if mysql_userinfo is None:
-            return route.error_msgs[201]['msg_no_user']
-    if mysql_roleinfo.roleIsAdmin==1:
-        pass
-    else:
-        return route.error_msgs[201]['msg_no_auth']
-
 
     # 查询名称是否存在
     try:
