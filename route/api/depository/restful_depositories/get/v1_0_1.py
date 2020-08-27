@@ -22,23 +22,22 @@ from model.mysql import model_mysql_depository
 @route.check_user
 @route.check_token
 @route.check_auth
-def key_depositorys_get():
+def key_depositories_get():
     # 初始化返回内容
     response_json = {
-        "code": 200,
-        "msg": "数据获取成功",
+        "error_code": 200,
+        "error_msg": "数据获取成功",
         "data": []
     }
 
     # 查询项目信息基础信息
     try:
-        mysql_depositorys_info = model_mysql_depository.query.filter().all()
-
+        mysql_depositories_info = model_mysql_depository.query.filter().all()
     except Exception as e:
         api_logger.error("表model_mysql_subject读取失败，失败原因：" + repr(e))
         return route.error_msgs[500]['msg_db_error']
     else:
-        for mpti in mysql_depositorys_info:
+        for mpti in mysql_depositories_info:
             response_json["data"].append({
                 "id": mpti.id,
                 "name": mpti.name,
