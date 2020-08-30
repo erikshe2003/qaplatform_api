@@ -35,11 +35,11 @@ def key_column_get():
     response_json = {
         "error_code": 200,
         "error_msg": "数据获取成功",
-        "data": []
+        "data": {}
     }
     # 取出入参
 
-    depository_id = flask.request.args['id']
+    depository_id = int(flask.request.args['id'])
 
     # 查询仓库是否存在
     try:
@@ -62,12 +62,16 @@ def key_column_get():
             model_mysql_case.depositoryId,
             model_mysql_case.columnId,
             model_mysql_case.index,
+            model_mysql_case.columnLevel,
             model_mysql_case.type,
             model_mysql_case.userId
         ).filter(
             model_mysql_case.depositoryId == depository_id,
             model_mysql_case.type == 1,
             model_mysql_case.status == 1
+        ).order_by(
+            model_mysql_case.columnLevel.asc(),
+            model_mysql_case.index.asc()
         ).all()
     except Exception as e:
         api_logger.error("model_mysql_depository，失败原因：" + repr(e))
@@ -85,6 +89,7 @@ def key_column_get():
                     'depositoryId': mci.depositoryId,
                     'columnId': mci.columnId,
                     'index': mci.index,
+                    'columnLevel': mci.columnLevel,
                     'type': mci.type,
                     'userId': mci.userId,
                     'expand': True,
@@ -106,7 +111,20 @@ def key_column_get():
                 return tree
 
             # 将第一个值选中
-            response_json['data'] = recurse_list_to_tree(0, {})
+            response_json['data'] = {
+                'id': 0,
+                'title': '全部目录',
+                'depositoryId': depository_id,
+                'columnId': 0,
+                'index': 0,
+                'columnLevel': 0,
+                'type': 1,
+                'userId': 0,
+                'expand': True,
+                'selected': False,
+                'contextmenu': True,
+                'children': recurse_list_to_tree(0, {})
+            }
 
     # 最后返回内容
     return response_json
