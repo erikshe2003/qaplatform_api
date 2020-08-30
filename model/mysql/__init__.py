@@ -21,7 +21,7 @@ from .userUi.subjectCaseStep import subjectCaseStep
 from .userUi.depository import depository
 from .userUi.project import project
 from .userUi.projectMember import projectMember
-from .userUi.case import case
+from .userUi.case import Case
 from .userUi.casePrecondition import casePrecondition
 from .userUi.caseStep import caseStep
 from .userUi.caseFile import caseFile
@@ -61,7 +61,7 @@ try:
     model_mysql_depository = depository
     model_mysql_project = project
     model_mysql_projectMember = projectMember
-    model_mysql_case =  case
+    model_mysql_case = Case
     model_mysql_casePrecondition = casePrecondition
     model_mysql_caseStep = caseStep
     model_mysql_caseFile = caseFile
@@ -69,8 +69,6 @@ try:
     model_mysql_projectReviewRecord = projectReviewRecord
     model_mysql_depositoryProjectFiledOrg = depositoryProjectFiledOrg
     model_mysql_projectArchivePendingCase = projectArchivePendingCase
-
-
     logmsg = "系统初始化|mysql数据库模型初始化成功"
     sys_logger.debug(logmsg)
 except Exception as e:

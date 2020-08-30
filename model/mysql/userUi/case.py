@@ -6,7 +6,7 @@ from sqlalchemy.dialects.mysql import TINYINT, INTEGER, VARCHAR, DATETIME, TEXT
 from handler.pool import mysqlpool
 
 
-class case(mysqlpool.Model):
+class Case(mysqlpool.Model):
     __tablename__ = "case"
     # 定义column
     id = mysqlpool.Column(
@@ -17,12 +17,6 @@ class case(mysqlpool.Model):
         unique=True,
         primary_key=True
     )
-    originalCaseId = mysqlpool.Column(
-        name="originalCaseId",
-        type_=INTEGER,
-        nullable=False,
-    )
-
     title = mysqlpool.Column(
         name="title",
         type_=VARCHAR(200),
@@ -30,38 +24,39 @@ class case(mysqlpool.Model):
     )
     depositoryId = mysqlpool.Column(
         name="depositoryId",
-        type_=TINYINT(4),
-        nullable=True
+        type_=INTEGER,
+        nullable=False
     )
     projectId = mysqlpool.Column(
         name="projectId",
-        type_=TINYINT(4),
+        type_=INTEGER,
         nullable=True
     )
     columnId = mysqlpool.Column(
         name="columnId",
-        type_=TINYINT(4),
-        nullable=True
+        type_=INTEGER,
+        nullable=False
     )
-
     index = mysqlpool.Column(
         name="index",
-        type_=VARCHAR(200),
-        nullable=True
+        type_=INTEGER,
+        nullable=False
     )
-
+    columnLevel = mysqlpool.Column(
+        name="columnLevel",
+        type_=INTEGER,
+        nullable=False
+    )
     level = mysqlpool.Column(
         name="level",
         type_=TINYINT(2),
         nullable=False
     )
-
     type = mysqlpool.Column(
         name="type",
         type_=TINYINT(2),
         nullable=False
     )
-
     status = mysqlpool.Column(
         name="status",
         type_=TINYINT(2),
@@ -69,8 +64,8 @@ class case(mysqlpool.Model):
     )
     userId = mysqlpool.Column(
         name="userId",
-        type_=TINYINT(4),
-        nullable=True
+        type_=INTEGER,
+        nullable=False
     )
     createTime = mysqlpool.Column(
         name="createTime",
@@ -80,13 +75,13 @@ class case(mysqlpool.Model):
     )
     updateUserId = mysqlpool.Column(
         name="updateUserId",
-        type_=TINYINT(4),
+        type_=INTEGER,
         nullable=True
     )
     updateTime = mysqlpool.Column(
         name="updateTime",
         type_=DATETIME,
-        nullable=False,
+        nullable=True,
         default=datetime.datetime.now
     )
     veri = mysqlpool.Column(
@@ -98,4 +93,9 @@ class case(mysqlpool.Model):
         name="arch",
         type_=TINYINT(4),
         nullable=True
+    )
+    originalCaseId = mysqlpool.Column(
+        name="originalCaseId",
+        type_=INTEGER,
+        nullable=False,
     )
