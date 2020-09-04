@@ -41,8 +41,8 @@ from model.mysql import model_mysql_useroperationrecord
 def user_info_put():
     # 初始化返回内容
     response_json = {
-        "error_code": 200,
-        "error_msg": "",
+        "code": 200,
+        "msg": "",
         "data": {}
     }
 
@@ -178,10 +178,10 @@ def user_info_put():
         user_info.userNewEmail = rq_new_mail_address
 
         # 变更邮箱需要变更返回信息
-        response_json["error_msg"] = "基础信息修改成功，请于新邮箱查收修改绑定邮箱确认邮件"
+        response_json["msg"] = "基础信息修改成功，请于新邮箱查收修改绑定邮箱确认邮件"
     else:
         # 返回普通成功信息
-        response_json["error_msg"] = "基础信息修改成功"
+        response_json["msg"] = "基础信息修改成功"
 
     # 修改头像地址/昵称/简介
     user_info.userHeadIconUrl = rq_file_url

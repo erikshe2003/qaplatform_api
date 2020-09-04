@@ -35,8 +35,8 @@ from model.mysql import model_mysql_userinfo
 def user_put():
     # 初始化返回内容
     response_json = {
-        "error_code": 200,
-        "error_msg": "",
+        "code": 200,
+        "msg": "",
         "data": {}
     }
 
@@ -80,7 +80,7 @@ def user_put():
         mysqlpool.session.commit()
 
     # 返回成功信息
-    response_json["error_msg"] = "操作成功"
+    response_json["msg"] = "操作成功"
     # 最后返回内容
     return response_json
 

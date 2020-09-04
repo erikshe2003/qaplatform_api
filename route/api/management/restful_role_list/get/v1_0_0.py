@@ -36,8 +36,8 @@ def role_list_get():
     """
     # 初始化返回内容
     response_json = {
-        "error_code": 200,
-        "error_msg": "",
+        "code": 200,
+        "msg": "",
         "data": {
             "total": 0,
             "role_list": {
@@ -125,6 +125,6 @@ def role_list_get():
         response_json["data"]["total"] = total_mysql.roleNum
 
     # 8.返回成功信息
-    response_json["error_msg"] = "操作成功"
+    response_json["msg"] = "操作成功"
     # 最后返回内容
     return response_json

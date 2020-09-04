@@ -24,8 +24,8 @@ from model.mysql import model_mysql_userinfo
 def user_mail_put():
     # 初始化返回内容
     response_json = {
-        "error_code": 200,
-        "error_msg": "",
+        "code": 200,
+        "msg": "",
         "data": {}
     }
 
@@ -105,6 +105,6 @@ def user_mail_put():
         requestvalue_newmail
     )
     # 定义msg
-    response_json["error_msg"] = "操作成功，请到新邮箱中查收修改成功邮件"
+    response_json["msg"] = "操作成功，请到新邮箱中查收修改成功邮件"
     # 最后返回内容
     return response_json

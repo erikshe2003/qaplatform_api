@@ -24,8 +24,8 @@ from model.mysql import model_mysql_plantype
 def plan_base_type_info_get():
     # 初始化返回内容
     response_json = {
-        "error_code": 200,
-        "error_msg": "基础测试计划类型数据查询成功",
+        "code": 200,
+        "msg": "基础测试计划类型数据查询成功",
         "data": []
     }
 

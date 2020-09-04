@@ -33,8 +33,8 @@ from model.mysql import model_mysql_case
 def key_column_delete():
     # 初始化返回内容
     response_json = {
-        "error_code": 200,
-        "error_msg": "数据删除成功",
+        "code": 200,
+        "msg": "数据删除成功",
         "data": None
     }
 

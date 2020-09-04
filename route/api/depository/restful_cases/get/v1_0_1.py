@@ -1,17 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import flask
-
 import route
 
 from handler.pool import mysqlpool
-
 from handler.log import api_logger
 
-from model.mysql import model_mysql_casePrecondition
 from model.mysql import model_mysql_case
-from model.mysql import model_mysql_caseFile
-from model.mysql import model_mysql_caseStep
 from model.mysql import model_mysql_depository
 """
     获取个人测试计划基础信息-api路由
@@ -31,20 +26,18 @@ from model.mysql import model_mysql_depository
 @route.check_auth
 @route.check_get_parameter(
     ['depositoryId', int, 1, None],
-    ['columnId', int, 1, None],
+    ['columnId', int, 0, None],
     ['keyWord', str, None, None]
 )
 def key_cases_get():
     # 初始化返回内容
     response_json = {
-        "error_code": 200,
-        "error_msg": "数据获取成功",
+        "code": 200,
+        "msg": "数据获取成功",
         "data": []
     }
 
-    cases_id = []
     # 取出必传入参
-
     depository_id = flask.request.args['depositoryId']
     column_id = flask.request.args['columnId']
     key_word = flask.request.args['keyWord']
@@ -78,190 +71,50 @@ def key_cases_get():
         if mysql_column_info is None:
             return route.error_msgs[201]['msg_no_catalogue']
 
-    # 查询目录下的用例/期望结果/对应步骤的信息
-    # SELECT
-    # 	qtc.id as id,
-    # 	qtc.title as title,
-    # 	qtc.depositoryId as depositoryId,
-    # 	qtc.projectId as projectId,
-    # 	qtc.columnId as columnId,
-    # 	qtc.index as `index`,
-    # 	qtc.level as `level`,
-    # 	qtc.status as `status`,
-    # 	qtcp.id as preconditionId,
-    # 	qtcp.content as preconditionContent,
-    # 	CONCAT(
-    # 		'[',
-    # 		GROUP_CONCAT(
-    # 			CONCAT(
-    # 				'{"stepId":',
-    # 				qtcs.id,
-    # 				',"stepContent":"',
-    # 				qtcs.content,
-    # 				'","stepExpectation":"',
-    # 				qtcs.expectation,
-    # 				'","stepIndex":',
-    # 				qtcs.index,'}'
-    # 			) SEPARATOR ','
-    # 		),
-    # 		']'
-    # 	) as stepsContent
-    # FROM qaplatform_test.case as qtc
-    # Left JOIN qaplatform_test.casePrecondition as qtcp
-    # 	on qtc.id = qtcp.caseId
-    # Left JOIN qaplatform_test.caseStep as qtcs
-    # 	on qtc.id = qtcs.caseId
-    # 		and qtcs.status = 1
-    # where qtc.depositoryId = 1
-    # and qtc.type=2
-    # and qtc.columnId = 1
-    # and qtc.title like '%1%'
-    # GROUP BY qtc.id,qtcp.id;
+    # 查询目录下的用例清单
+    # 1．查看仓库最新归档用例的数据筛选条件为depositoryId取实际id&status=1&veri=3&arch=2
+    mysql_cases_info_query = mysqlpool.session.query(
+        model_mysql_case.id,
+        model_mysql_case.title,
+        model_mysql_case.depositoryId,
+        model_mysql_case.projectId,
+        model_mysql_case.columnId,
+        model_mysql_case.index,
+        model_mysql_case.level,
+        model_mysql_case.status,
+        model_mysql_case.veri,
+        model_mysql_case.arch
+    ).filter(
+        model_mysql_case.depositoryId == depository_id,
+        model_mysql_case.columnId == column_id,
+        model_mysql_case.type == 2,
+        model_mysql_case.status == 1,
+        model_mysql_case.veri == 3,
+        model_mysql_case.arch == 2,
+    )
+    if key_word != '':
+        mysql_cases_info_query = mysql_cases_info_query.filter(
+            model_mysql_case.title.like('%'+key_word+'%'),
+        )
     try:
-        mysql_cases_info = mysqlpool.session.query(
-            model_mysql_case.id,
-            model_mysql_case.title,
-            model_mysql_case.depositoryId,
-            model_mysql_case.projectId,
-            model_mysql_case.columnId,
-            model_mysql_case.index,
-
-        ).filter(
-            model_mysql_case.id == column_id,
-        ).first()
+        mysql_cases_info = mysql_cases_info_query.all()
         api_logger.error("仓库目录数据读取成功")
     except Exception as e:
         api_logger.error("仓库目录数据读取失败，失败原因：" + repr(e))
         return route.error_msgs[500]['msg_db_error']
     else:
-        if mysql_column_info is None:
-            return route.error_msgs[201]['msg_no_catalogue']
-
-
-
-    # # 判断keyword是否存在
-    # if len(key_word) == 0:
-    #     # 查询满足条件的测试用例编号
-    #     try:
-    #         mysql_cases_id = model_mysql_case.query.filter(
-    #             model_mysql_case.columnId == column_id,
-    #             model_mysql_case.depositoryId == depository_id,
-    #             model_mysql_case.status == 1,
-    #             model_mysql_case.type == 2,
-    #             model_mysql_case.veri ==3,
-    #             model_mysql_case.arch ==2
-    #         ).order_by(model_mysql_case.index).all()
-    #     except Exception as e:
-    #         api_logger.error("读取失败，失败原因：" + repr(e))
-    #         return route.error_msgs[500]['msg_db_error']
-    #     else:
-    #         if len(mysql_cases_id) ==0:
-    #             return route.error_msgs[201]['msg_no_case']
-    #         else:
-    #             for x in mysql_cases_id:
-    #                 cases_id.append(x.id)
-    # else:
-    #     # 查询满足条件的测试用例编号
-    #     try:
-    #         mysql_cases_id = model_mysql_case.query.filter(
-    #             model_mysql_case.columnId == column_id,
-    #             model_mysql_case.depositoryId == depository_id,
-    #             model_mysql_case.status == 1,
-    #             model_mysql_case.type == 2,
-    #             model_mysql_case.veri ==3,
-    #             model_mysql_case.arch ==2,
-    #             model_mysql_case.title.like('%'+key_word+'%')
-    #         ).order_by(model_mysql_case.index).all()
-    #     except Exception as e:
-    #         api_logger.error("读取失败，失败原因：" + repr(e))
-    #         return route.error_msgs[500]['msg_db_error']
-    #     else:
-    #         if len(mysql_cases_id) == 0:
-    #             return route.error_msgs[201]['msg_no_case']
-    #         else:
-    #             for x in mysql_cases_id:
-    #
-    #                 cases_id.append(x.id)
-    #
-    # count = 0
-    # for case_id in cases_id:
-    #     # 查用例是否存在,构造基础信息
-    #     try:
-    #         mysql_case_info = model_mysql_case.query.filter(
-    #             model_mysql_case.id == case_id, model_mysql_case.type == 2, model_mysql_case.status == 1
-    #         ).first()
-    #     except Exception as e:
-    #         api_logger.error("读取失败，失败原因：" + repr(e))
-    #         return route.error_msgs[500]['msg_db_error']
-    #     else:
-    #         if mysql_case_info is None:
-    #             return route.error_msgs[201]['msg_no_case']
-    #         else:
-    #             response_json['data'].append({
-    #                 'id':mysql_case_info.id,
-    #                 'columnId': mysql_case_info.columnId,
-    #                 'title':mysql_case_info.title,
-    #                 'level':mysql_case_info.level,
-    #                 'index':mysql_case_info.index,
-    #                 'casePrecondition':None,
-    #                 'ossPath':[],
-    #                 'caseStep':[]
-    #             })
-    #
-    #     # 查询是否存在前置条件
-    #     try:
-    #         mysql_casePrecondition_info = model_mysql_casePrecondition.query.filter(
-    #             model_mysql_casePrecondition.caseId == case_id
-    #         ).first()
-    #     except Exception as e:
-    #         api_logger.error("读取失败，失败原因：" + repr(e))
-    #         return route.error_msgs[500]['msg_db_error']
-    #     else:
-    #         if mysql_casePrecondition_info is None:
-    #             pass
-    #         else:
-    #             response_json['data'][count]['casePrecondition']= mysql_casePrecondition_info.content
-    #
-    #     # 查询是否存在附件
-    #     try:
-    #         mysql_caseFile_info = model_mysql_caseFile.query.filter(
-    #             model_mysql_caseFile.caseId == case_id, model_mysql_caseFile.status == 1
-    #         ).all()
-    #     except Exception as e:
-    #         api_logger.error("读取失败，失败原因：" + repr(e))
-    #         return route.error_msgs[500]['msg_db_error']
-    #     else:
-    #         if mysql_caseFile_info is None:
-    #             pass
-    #         else:
-    #             for x in mysql_caseFile_info:
-    #                 response_json['data'][count]['ossPath'].append({
-    #                     "id": x.id,
-    #                     "ossPath": x.ossPath,
-    #                     "fileAlias": x.fileAlias
-    #                 }
-    #                 )
-    #
-    #     # 查询是否存在测试步骤
-    #     try:
-    #         mysql_caseStep_info = model_mysql_caseStep.query.filter(
-    #             model_mysql_caseStep.caseId == case_id,model_mysql_caseStep.status==1
-    #         ).order_by(model_mysql_caseStep.index).all()
-    #     except Exception as e:
-    #         api_logger.error("读取失败，失败原因：" + repr(e))
-    #         return route.error_msgs[500]['msg_db_error']
-    #     else:
-    #         if mysql_caseStep_info is None:
-    #             pass
-    #         else:
-    #             for mqti in mysql_caseStep_info:
-    #
-    #                 response_json['data'][count]['caseStep'].append({
-    #                     "id": mqti.id,
-    #                     "content": mqti.content,
-    #                     "expectation": mqti.expectation,
-    #                     "index": mqti.index
-    #                 })
-    #     count += 1
+        for mci in mysql_cases_info:
+            response_json['data'].append({
+                'id': mci.id,
+                'title': mci.title,
+                'depositoryId': mci.depositoryId,
+                'projectId': mci.projectId,
+                'columnId': mci.columnId,
+                'index': mci.index,
+                'level': mci.level,
+                'status': mci.status,
+                'veri': mci.veri,
+                'arch': mci.arch
+            })
 
     return response_json

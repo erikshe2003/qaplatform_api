@@ -34,8 +34,8 @@ from model.mysql import model_mysql_taskinfo
 def task_list_get():
     # 初始化返回内容
     response_json = {
-        "error_code": 200,
-        "error_msg": "操作成功",
+        "code": 200,
+        "msg": "操作成功",
         "data": {
             "total": 0,
             "task_list": []

@@ -21,8 +21,8 @@ from handler.api.check import ApiCheck
 def token_get():
     # 初始化返回内容
     response_json = {
-        "error_code": 200,
-        "error_msg": "",
+        "code": 200,
+        "msg": "",
         "data": {}
     }
 
@@ -59,6 +59,6 @@ def token_get():
         return ApiError.requestfail_server("token校验失败")
 
     # 定义msg
-    response_json["error_msg"] = "token有效"
+    response_json["msg"] = "token有效"
     # 最后返回内容
     return response_json

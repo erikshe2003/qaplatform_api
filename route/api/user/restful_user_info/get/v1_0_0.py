@@ -29,8 +29,8 @@ from model.mysql import model_mysql_useroperationrecord
 def user_info_get():
     # 初始化返回内容
     response_json = {
-        "error_code": 200,
-        "error_msg": "",
+        "code": 200,
+        "msg": "",
         "data": {
             "user_id": '',
             "nick_name": '',
@@ -78,7 +78,7 @@ def user_info_get():
         response_json["data"]["icon_url"] = uinfo_mysql.userHeadIconUrl
 
     # 8.返回成功信息
-    response_json["error_msg"] = "操作成功"
+    response_json["msg"] = "操作成功"
     # 最后返回内容
     return response_json
 

@@ -11,8 +11,8 @@ import time
 def time_stamp_get():
     # 初始化返回内容
     response_json = {
-        "error_code": 200,
-        "error_msg": "操作成功",
+        "code": 200,
+        "msg": "操作成功",
         "data": {
             "timestamp": time.time()
         }

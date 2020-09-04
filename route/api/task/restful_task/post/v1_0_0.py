@@ -49,8 +49,8 @@ from model.redis import modle_redis_apitestplanworktable
 def task_post():
     # 初始化返回内容
     response_json = {
-        "error_code": 200,
-        "error_msg": "操作成功",
+        "code": 200,
+        "msg": "操作成功",
         "data": {}
     }
 
@@ -278,7 +278,7 @@ def task_post():
                 file=task_dir_path + '.zip'
             )
             if not deploy_result:
-                response_json['error_code'] = 500
+                response_json['code'] = 500
                 response_json['error_msg'] = '测试任务下发失败，原因:%s，请联系管理员或稍后再发起测试任务' % deploy_msg
                 return json.dumps(response_json)
 

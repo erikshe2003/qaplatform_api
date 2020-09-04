@@ -29,8 +29,8 @@ from model.mysql import model_mysql_functioninfo
 def user_permission_get():
     # 初始化返回内容
     response_json = {
-        "error_code": 200,
-        "error_msg": "",
+        "code": 200,
+        "msg": "",
         "data": {}
     }
 
@@ -62,7 +62,7 @@ def user_permission_get():
         return ApiError.requestfail_server("角色权限信息处理异常")
 
     # 定义msg
-    response_json["error_msg"] = "token有效"
+    response_json["msg"] = "token有效"
     # 最后返回内容
     return response_json
 

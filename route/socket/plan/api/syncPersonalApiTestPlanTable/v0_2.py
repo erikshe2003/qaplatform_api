@@ -91,8 +91,8 @@ def sync_personal_api_test_plan_table(ws):
             gstd_flag, gstd_table = get_snap_table_data(json_action['planId'])
             if gstd_flag:
                 ws.send(json.dumps({
-                    "error_code": 200,
-                    "error_msg": "首次获取工作台快照内容成功",
+                    "code": 200,
+                    "msg": "首次获取工作台快照内容成功",
                     "action": "get",
                     "data": gstd_table
                 }))
@@ -109,8 +109,8 @@ def sync_personal_api_test_plan_table(ws):
                         except Exception as e:
                             api_logger.debug('请求内容格式非法:%s' % repr(e))
                             ws.send(json.dumps({
-                                "error_code": 201,
-                                "error_msg": "请求内容格式非法",
+                                "code": 201,
+                                "msg": "请求内容格式非法",
                                 "action": "",
                                 "data": ""
                             }))
@@ -122,16 +122,16 @@ def sync_personal_api_test_plan_table(ws):
                                     if set_snap_table_data(ws_re_json['planId'], ws_re_json['table']):
                                         api_logger.debug('同步成功')
                                         ws.send(json.dumps({
-                                            "error_code": 200,
-                                            "error_msg": "同步成功",
+                                            "code": 200,
+                                            "msg": "同步成功",
                                             "action": "set",
                                             "data": ""
                                         }))
                                     else:
                                         api_logger.debug('同步失败，ws_re_json缺少关键key')
                                         ws.send(json.dumps({
-                                            "error_code": 500,
-                                            "error_msg": "同步失败，请联系管理员",
+                                            "code": 500,
+                                            "msg": "同步失败，请联系管理员",
                                             "action": "set",
                                             "data": ""
                                         }))
@@ -141,16 +141,16 @@ def sync_personal_api_test_plan_table(ws):
                                     if gstd_flag:
                                         api_logger.debug('数据获取成功')
                                         ws.send(json.dumps({
-                                            "error_code": 200,
-                                            "error_msg": "数据获取成功",
+                                            "code": 200,
+                                            "msg": "数据获取成功",
                                             "action": "get",
                                             "data": gstd_table
                                         }))
                                     else:
                                         api_logger.debug('数据获取失败')
                                         ws.send(json.dumps({
-                                            "error_code": 500,
-                                            "error_msg": "数据获取失败，请联系管理员",
+                                            "code": 500,
+                                            "msg": "数据获取失败，请联系管理员",
                                             "action": "get",
                                             "data": ""
                                         }))
@@ -164,8 +164,8 @@ def sync_personal_api_test_plan_table(ws):
                                 else:
                                     api_logger.debug('请求内容格式非法')
                                     ws.send(json.dumps({
-                                        "error_code": 201,
-                                        "error_msg": "请求内容格式非法",
+                                        "code": 201,
+                                        "msg": "请求内容格式非法",
                                         "action": "",
                                         "data": ""
                                     }))
@@ -173,8 +173,8 @@ def sync_personal_api_test_plan_table(ws):
                             else:
                                 api_logger.debug('请求内容格式非法')
                                 ws.send(json.dumps({
-                                    "error_code": 201,
-                                    "error_msg": "请求内容格式非法",
+                                    "code": 201,
+                                    "msg": "请求内容格式非法",
                                     "action": "",
                                     "data": ""
                                 }))
@@ -187,8 +187,8 @@ def sync_personal_api_test_plan_table(ws):
                         create_snap_when_close(json_action['planId'])
             else:
                 ws.send(json.dumps({
-                    "error_code": 500,
-                    "error_msg": "首次获取工作台快照内容失败，请联系管理员",
+                    "code": 500,
+                    "msg": "首次获取工作台快照内容失败，请联系管理员",
                     "action": "get",
                     "data": ""
                 }))
@@ -196,8 +196,8 @@ def sync_personal_api_test_plan_table(ws):
                 ws.close()
         else:
             ws.send(json.dumps({
-                "error_code": 201,
-                "error_msg": "入参校验失败",
+                "code": 201,
+                "msg": "入参校验失败",
                 "action": "get",
                 "data": ""
             }))

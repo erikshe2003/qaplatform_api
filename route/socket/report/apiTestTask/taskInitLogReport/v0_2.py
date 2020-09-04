@@ -199,8 +199,8 @@ def get_running_result(task_id, query_offset, query_re_log_per):
     """
     # 初始化返回内容
     response_json = {
-        "error_code": 200,
-        "error_msg": "操作成功",
+        "code": 200,
+        "msg": "操作成功",
         "data": {
             "is_running": True,
             "count": 0,

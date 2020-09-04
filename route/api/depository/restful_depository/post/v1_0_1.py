@@ -67,45 +67,21 @@ def key_depository_post():
         api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
         return route.error_msgs[500]['msg_db_error']
     else:
-        if mysql_depository is None:
-            new_depository_info = model_mysql_depository(
-
-                userId=request_user_id,
-                name=depository_name,
-                description=depository_description,
-
-            )
-            mysqlpool.session.add(new_depository_info)
-            mysqlpool.session.commit()
-        else:
+        if mysql_depository is not None:
             return route.error_msgs[201]['msg_exit_depository']
 
-    #获取当前id
+    # 新增仓库基础信息
+    new_depository_info = model_mysql_depository(
+        userId=request_user_id,
+        name=depository_name,
+        description=depository_description,
+    )
     try:
-        mysql_depository_info = model_mysql_depository.query.filter(
-            model_mysql_depository.name == depository_name
-        ).first()
+        mysqlpool.session.add(new_depository_info)
+        mysqlpool.session.commit()
     except Exception as e:
-        api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
+        api_logger.error("仓库基础信息新增失败，失败原因：" + repr(e))
         return route.error_msgs[500]['msg_db_error']
-    else:
-        if mysql_depository_info is None:
-            return route.error_msgs[201]['msg_no_depository']
-        else:
-            new_column_info = model_mysql_case(
-                title="顶级目录",
-                depositoryId=mysql_depository_info.id,
-                userId=request_user_id,
-                columnId=0,
-                level=0,
-                type=1,
-                status=1
-            )
-            mysqlpool.session.add(new_column_info)
-            mysqlpool.session.commit()
-
-
-
 
     # 最后返回内容
     return response_json
