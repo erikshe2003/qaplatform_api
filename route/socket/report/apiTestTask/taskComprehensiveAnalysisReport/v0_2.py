@@ -446,8 +446,8 @@ def get_running_result(taskid, snap, last_analysis_data, last_return_analysis_da
     """
     # 初始化返回内容
     response_json = {
-        "error_code": 200,
-        "error_msg": "操作成功",
+        "code": 200,
+        "msg": "操作成功",
         "data": {
             "is_running": True,
             "analysis_data": []

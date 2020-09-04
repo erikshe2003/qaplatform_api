@@ -31,11 +31,10 @@ from model.mysql import model_mysql_project
 def key_project_delete():
     # 初始化返回内容
     response_json = {
-    "code": 200,
-    "msg": "数据删除成功",
-    "data": None
+        "code": 200,
+        "msg": "数据删除成功",
+        "data": None
     }
-
 
     # 取出入参
     project_user_id = flask.request.headers['UserId']
@@ -59,7 +58,6 @@ def key_project_delete():
         else:
             mysql_project_info.status=-1
             mysqlpool.session.commit()
-
 
     # 最后返回内容
     return response_json

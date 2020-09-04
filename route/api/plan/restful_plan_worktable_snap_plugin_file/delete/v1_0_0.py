@@ -38,8 +38,8 @@ from model.mysql import model_mysql_userinfo
 def plan_worktable_snap_plugin_file_delete():
     # 初始化返回内容
     response_json = {
-        "error_code": 200,
-        "error_msg": "操作成功",
+        "code": 200,
+        "msg": "操作成功",
         "data": {}
     }
 

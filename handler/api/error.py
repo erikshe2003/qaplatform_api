@@ -11,8 +11,8 @@ class ApiError:
     def requestfail_error(cls, msg):
         api_logger.warn("请求操作失败：" + msg)
         response_json = {
-            "error_code": 201,
-            "error_msg": msg,
+            "code": 201,
+            "msg": msg,
             "data": {}
         }
         return response_json
@@ -22,8 +22,8 @@ class ApiError:
     def requestfail_nokey(cls, msg):
         api_logger.warn("缺少必传项：" + msg)
         response_json = {
-            "error_code": 302,
-            "error_msg": "缺少必传参数",
+            "code": 302,
+            "msg": "缺少必传参数",
             "data": {}
         }
         return response_json
@@ -33,8 +33,8 @@ class ApiError:
     def requestfail_server(cls, msg):
         api_logger.warn("服务处理异常：" + msg)
         response_json = {
-                "error_code": 500,
-                "error_msg": "服务处理异常",
+                "code": 500,
+                "msg": "服务处理异常",
                 "data": {}
             }
         return response_json
@@ -44,8 +44,8 @@ class ApiError:
     def requestfail_value(cls, msg):
         api_logger.warn("参数传值非法：" + msg)
         response_json = {
-            "error_code": 301,
-            "error_msg": "参数传值非法",
+            "code": 301,
+            "msg": "参数传值非法",
             "data": {}
         }
         return response_json

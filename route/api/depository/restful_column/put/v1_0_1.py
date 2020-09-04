@@ -40,8 +40,8 @@ from model.mysql import model_mysql_depository
 def key_column_put():
     # 初始化返回内容
     response_json = {
-        "error_code": 200,
-        "error_msg": "数据修改成功",
+        "code": 200,
+        "msg": "数据修改成功",
         "data": {}
    }
 

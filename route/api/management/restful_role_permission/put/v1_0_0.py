@@ -43,8 +43,8 @@ def role_permission_put():
     """
     # 初始化返回内容
     response_json = {
-        "error_code": 200,
-        "error_msg": "",
+        "code": 200,
+        "msg": "",
         "data": {}
     }
 
@@ -432,6 +432,6 @@ def role_permission_put():
             return route.error_msgs[500]['msg_db_error']
 
     # 8.返回成功信息
-    response_json["error_msg"] = "操作成功"
+    response_json["msg"] = "操作成功"
     # 最后返回内容
     return response_json

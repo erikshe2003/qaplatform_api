@@ -29,8 +29,8 @@ from model.mysql import model_mysql_workerinfo
 def worker_post():
     # 初始化返回内容
     response_json = {
-        "error_code": 200,
-        "error_msg": "操作成功",
+        "code": 200,
+        "msg": "操作成功",
         "data": {
             "worker_id": None,
             "log_ip": None,
@@ -41,7 +41,7 @@ def worker_post():
 
     # 检查ip格式是否合法
     worker_ip = flask.request.json['ip']
-    error_msg = {"error_code": 201, "error_msg": "ip地址非法", "data": {}}
+    error_msg = {"code": 201, "msg": "ip地址非法", "data": {}}
     compile_ip = re.compile('^((25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(25[0-5]|2[0-4]\d|[01]?\d\d?)$')
     if not compile_ip.match(worker_ip):
         return json.dumps(error_msg)

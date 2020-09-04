@@ -185,8 +185,8 @@ def get_task_info(taskid):
 def get_running_result(taskid, search, new_case_list, planinfo, step_count):
     # 初始化返回内容
     response_json = {
-        "error_code": 200,
-        "error_msg": "操作成功",
+        "code": 200,
+        "msg": "操作成功",
         "data": {}
     }
 

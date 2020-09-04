@@ -38,8 +38,8 @@ from model.mysql import model_mysql_userinfo, model_mysql_useroperationrecord
 def new_user_info_put():
     # 初始化返回内容
     response_json = {
-        "error_code": 200,
-        "error_msg": "",
+        "code": 200,
+        "msg": "",
         "data": {}
     }
 
@@ -159,6 +159,6 @@ def new_user_info_put():
 
     # 8.返回成功信息
     # 定义msg
-    response_json["error_msg"] = "操作成功，请查收账户注册邮件"
+    response_json["msg"] = "操作成功，请查收账户注册邮件"
     # 最后返回内容
     return response_json

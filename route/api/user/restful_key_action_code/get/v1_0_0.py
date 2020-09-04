@@ -27,8 +27,8 @@ from model.mysql import model_mysql_userinfo
 def key_action_code_get():
     # 初始化返回内容
     response_json = {
-        "error_code": 200,
-        "error_msg": "",
+        "code": 200,
+        "msg": "",
         "data": {}
     }
 
@@ -81,6 +81,6 @@ def key_action_code_get():
         return route.error_msgs[201]["action_code_error"]
 
     # 4.返回校验数据
-    response_json["error_msg"] = "账户操作码校验通过"
+    response_json["msg"] = "账户操作码校验通过"
     # 最后返回内容
     return response_json

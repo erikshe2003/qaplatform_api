@@ -30,8 +30,8 @@ from model.mysql import model_mysql_useroperationrecord, model_mysql_userinfo
 def user_password_post():
     # 初始化返回内容
     response_json = {
-        "error_code": 200,
-        "error_msg": "",
+        "code": 200,
+        "msg": "",
         "data": {}
     }
 
@@ -109,6 +109,6 @@ def user_password_post():
         uinfo_mysql.userEmail
     )
     # 定义msg
-    response_json["error_msg"] = "操作成功，请查收重置密码邮件"
+    response_json["msg"] = "操作成功，请查收重置密码邮件"
     # 最后返回内容
     return response_json

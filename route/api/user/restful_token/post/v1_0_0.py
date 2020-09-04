@@ -30,8 +30,8 @@ from handler.api.error import ApiError
 def token_post():
     # 初始化返回内容
     response_json = {
-        "error_code": 200,
-        "error_msg": "",
+        "code": 200,
+        "msg": "",
         "data": {
             "user_id": 0,
             "access_token": ''
@@ -72,7 +72,7 @@ def token_post():
     response_json["data"]["user_id"] = uinfo_mysql.userId
 
     # 6.返回信息
-    response_json["error_msg"] = "账户登陆成功"
+    response_json["msg"] = "账户登陆成功"
     logmsg = "手动登陆请求处理完毕"
     api_logger.info(logmsg)
     # 最后返回内容
