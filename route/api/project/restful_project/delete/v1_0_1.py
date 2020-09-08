@@ -54,9 +54,8 @@ def key_project_delete():
     else:
         if mysql_project_info is None:
             return route.error_msgs[201]['msg_no_project']
-
         else:
-            mysql_project_info.status=-1
+            mysql_project_info.status = -1
             mysqlpool.session.commit()
 
     # 最后返回内容
