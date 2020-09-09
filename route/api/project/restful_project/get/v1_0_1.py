@@ -22,13 +22,13 @@ def key_project_get():
         "msg": "数据获取成功",
         "data": {
             "id": 0,
-            "name": None,
-            "description": None,
-            "coverOssPath": None,
-            "userId": None,
-            "depositoryId": None,
-            "originalProjectId": None,
-            "createTime": None,
+            "name": '',
+            "description": '',
+            "coverOssPath": '',
+            "userId": 0,
+            "depositoryId": 0,
+            "originalProjectId": 0,
+            "createTime": '',
             "members": []
         }
     }
