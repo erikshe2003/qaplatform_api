@@ -10,6 +10,7 @@ from handler.log import api_logger
 from model.mysql import model_mysql_project
 from model.mysql import model_mysql_projectMember
 from model.mysql import model_mysql_userinfo
+from model.mysql import model_mysql_roleinfo
 """
     获取个人测试计划基础信息-api路由
     ----校验
@@ -26,7 +27,7 @@ from model.mysql import model_mysql_userinfo
 
 @route.check_user
 @route.check_token
-@route.check_auth
+# @route.check_auth
 @route.check_get_parameter(
     ['id', int, 1, None],
     ['nickname', str, None, None]
@@ -92,17 +93,37 @@ def key_projectmember_get():
                 if mysql_user_info is None:
                     pass
                 else:
+
+                    try:
+
+                        mysql_role_info = model_mysql_roleinfo.query.filter(
+                            model_mysql_roleinfo.roleId == mysql_user_info.userRoleId,
+                            model_mysql_roleinfo.roleStatus == 1
+                        ).all()
+
+                    except Exception as e:
+                        api_logger.error("model_mysql_depository，失败原因：" + repr(e))
+                        return route.error_msgs[500]['msg_db_error']
+                    else:
+                        for xx in mysql_role_info:
+                            roles = xx.roleName + ','
+
                     #根据关键字进行数据过滤
                     if keyword!='':
+                        # 获取项目成员角色名称
+
+
+
                         if mysql_user_info.userNickName.find(keyword)!= -1:
                             response_json['data'].append({
                                 "id": mpti.id,
                                 "userId": mpti.userId,
                                 "type": str(mpti.type),
                                 "createTime": str(mpti.createTime),
-                                "nickname": None
+                                "nickName": None,
+                                "roles": roles
                             })
-                            response_json['data'][count]['nickname'] = mysql_user_info.userNickName
+                            response_json['data'][count]['nickName'] = mysql_user_info.userNickName
                             count += 1
 
                     else:
@@ -112,9 +133,10 @@ def key_projectmember_get():
                             "userId": mpti.userId,
                             "type": str(mpti.type),
                             "createTime": str(mpti.createTime),
-                            "nickname": None
+                            "nickName": None,
+                            "roles": roles
                         })
-                        response_json['data'][count]['nickname'] = mysql_user_info.userNickName
+                        response_json['data'][count]['nickName'] = mysql_user_info.userNickName
                         count += 1
 
 
