@@ -25,7 +25,7 @@ from model.mysql import model_mysql_userinfo
 
 @route.check_user
 @route.check_token
-@route.check_auth
+# @route.check_auth
 @route.check_post_parameter(
     ['userId', int, 1, None],
     ['planType', int, 1, 2],

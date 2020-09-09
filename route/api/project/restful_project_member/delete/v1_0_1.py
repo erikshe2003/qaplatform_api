@@ -24,7 +24,7 @@ from model.mysql import model_mysql_projectMember
 
 @route.check_user
 @route.check_token
-@route.check_auth
+# @route.check_auth
 @route.check_delete_parameter(
     ['id', int, 1, None],
     ['userId', int, 1, None]

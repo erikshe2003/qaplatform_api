@@ -20,7 +20,7 @@ from model.mysql import model_mysql_plantype
 
 @route.check_user
 @route.check_token
-@route.check_auth
+# @route.check_auth
 def plan_base_type_info_get():
     # 初始化返回内容
     response_json = {

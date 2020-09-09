@@ -88,7 +88,9 @@ def sync_personal_api_test_plan_table(ws):
         # 根据状态位决定要不要执行
         if check_flag:
             # 首次读取快照内容
+
             gstd_flag, gstd_table = get_snap_table_data(json_action['planId'])
+
             if gstd_flag:
                 ws.send(json.dumps({
                     "code": 200,
@@ -230,16 +232,19 @@ def check_owner(plan_id, user_id):
 
 
 def get_snap_table_data(plan_id):
+
     # 于redis中尝试读取计划的快照缓存
     cache_table_bytes = modle_redis_apitestplanworktable.query_table(plan_id=plan_id)
+
     # 如果缓存中没有，就去mysql读取并且同步至redis
+    # 这里类型错误，数组为空
     if cache_table_bytes is None:
         # 读取mysql中对应plan的最新snap
         try:
             mysql_snap_data = model_mysql_tablesnap.query.filter(
                 and_(
                     model_mysql_tablesnap.planId == plan_id,
-                    model_mysql_tablesnap.status == 1
+                    # model_mysql_tablesnap.status == 1
                 )
             ).order_by(
                 model_mysql_tablesnap.id.desc()

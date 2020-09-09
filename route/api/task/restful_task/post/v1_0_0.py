@@ -39,7 +39,7 @@ from model.redis import modle_redis_apitestplanworktable
 
 @route.check_token
 @route.check_user
-@route.check_auth
+# @route.check_auth
 @route.check_post_parameter(
     ['planId', int, 1, None],
     ['description', str, None, 200],
@@ -67,6 +67,7 @@ def task_post():
     datetime_start_time = None
     datetime_end_time = None
     if start_type == 2:
+
         # 开始时间检查
         if 'startTime' not in flask.request.json:
             api_logger.debug("传参缺少startTime")
@@ -95,6 +96,7 @@ def task_post():
     # 如果runType为1则需要检查执行次数
     times = None
     if run_type == 1:
+        print(1111111)
         if 'times' not in flask.request.json:
             return route.error_msgs[302]['msg_request_params_incomplete']
         elif type(flask.request.json['times']) is not int:
@@ -168,8 +170,9 @@ def task_post():
         else:
             return route.error_msgs[301]['msg_value_type_error']
     else:
-        return route.error_msgs[302]['msg_request_params_incomplete']
+            return route.error_msgs[302]['msg_request_params_incomplete']
     # 新增测试任务记录
+
     try:
         mysqlpool.session.add(new_task_info)
         mysqlpool.session.commit()
@@ -187,10 +190,12 @@ def task_post():
         api_logger.debug('存放测试任务文件的file主目录不存在，尝试创建...')
         try:
             os.makedirs('file/')
+
         except Exception as e:
             api_logger.error('存放测试任务文件的file目录创建失败，原因:' + repr(e))
             return route.error_msgs[500]['msg_file_error']
         else:
+
             api_logger.debug('存放测试任务文件的file目录创建成功')
     the_now = datetime.datetime.now()
     the_year = str(the_now.year)
@@ -278,6 +283,7 @@ def task_post():
                 file=task_dir_path + '.zip'
             )
             if not deploy_result:
+                print(7777)
                 response_json['code'] = 500
                 response_json['error_msg'] = '测试任务下发失败，原因:%s，请联系管理员或稍后再发起测试任务' % deploy_msg
                 return json.dumps(response_json)
