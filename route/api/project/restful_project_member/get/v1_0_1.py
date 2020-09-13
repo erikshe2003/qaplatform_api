@@ -27,7 +27,7 @@ from model.mysql import model_mysql_roleinfo
 
 @route.check_user
 @route.check_token
-# @route.check_auth
+@route.check_auth
 @route.check_get_parameter(
     ['id', int, 1, None],
     ['nickname', str, None, None]
