@@ -56,7 +56,7 @@ def key_projectlist_get():
         for mqti in mysql_projects_info:
             response_json["data"].append({
                 "id":mqti.id,
-                "name":mqti.id,
+                "name":mqti.name,
                 "decription":mqti.description,
                 "coverOssPath":mqti.coverOssPath
             })
