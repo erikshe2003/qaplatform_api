@@ -32,8 +32,6 @@ def key_projects_get():
     request_admin = flask.request.args['admin']
     request_keyword = flask.request.args['keyword']
 
-    print(request_admin)
-    print(type(request_admin))
     # 根据是否管理
     # true返回管理的项目
     # false返回参与的项目
@@ -61,7 +59,7 @@ def key_projects_get():
             model_mysql_projectMember.status == 1,
             model_mysql_projectMember.userId == request_userid,
             model_mysql_projectMember.type == 1
-        )
+        ).order_by(model_mysql_project.createTime.desc())
     else:
 
         mysql_project_list_query = mysqlpool.session.query(
@@ -86,7 +84,7 @@ def key_projects_get():
             model_mysql_projectMember.status == 1,
             model_mysql_projectMember.userId == request_userid,
             model_mysql_projectMember.type.in_([1,2])
-        )
+        ).order_by(model_mysql_project.createTime.desc())
 
 
     if request_keyword != '':
