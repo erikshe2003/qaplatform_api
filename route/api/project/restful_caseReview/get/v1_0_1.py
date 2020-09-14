@@ -78,12 +78,14 @@ def key_caseReview_get():
 
     #查询满足条件的记录
     if int(stat)==-1 and  int(initiator_id)==0:
+
         try:
             mysql_reviews_info = model_mysql_projectReviewRecord.query.filter(
                 model_mysql_projectReviewRecord.projectId == project_id,
                 model_mysql_projectReviewRecord.reviewerId == request_user_id,
 
             ).order_by(model_mysql_projectReviewRecord.createTime).all()
+
         except Exception as e:
 
             api_logger.error("读取失败，失败原因：" + repr(e))
@@ -196,6 +198,7 @@ def key_caseReview_get():
                         "id": mqti.id,
                         "caseInfo": case_info,
                         "result": mqti.result,
+                        "createTime": str(mqti.createTime),
                         "finishTime": str(mqti.finishTime),
                         "initiator": user_name
                     })
@@ -318,6 +321,7 @@ def key_caseReview_get():
                         "id": mqti.id,
                         "caseInfo": case_info,
                         "result": mqti.result,
+                        "createTime": str(mqti.createTime),
                         "finishTime": str(mqti.finishTime),
                         "initiator": user_name
                     })
@@ -441,6 +445,7 @@ def key_caseReview_get():
                         "id": mqti.id,
                         "caseInfo": case_info,
                         "result": mqti.result,
+                        "createTime": str(mqti.createTime),
                         "finishTime": str(mqti.finishTime),
                         "initiator": user_name
                     })
@@ -565,6 +570,7 @@ def key_caseReview_get():
                         "id": mqti.id,
                         "caseInfo": case_info,
                         "result": mqti.result,
+                        "createTime": str(mqti.createTime),
                         "finishTime": str(mqti.finishTime),
                         "initiator": user_name
                     })
