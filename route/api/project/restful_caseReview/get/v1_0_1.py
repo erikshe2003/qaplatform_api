@@ -200,7 +200,8 @@ def key_caseReview_get():
                         "result": mqti.result,
                         "createTime": str(mqti.createTime),
                         "finishTime": str(mqti.finishTime),
-                        "initiator": user_name
+                        "initiator": user_name,
+                        "initiatorId": mqti.initiatorId
                     })
     elif int(stat)==-1 and int(initiator_id)!=0:
         try:
@@ -323,7 +324,8 @@ def key_caseReview_get():
                         "result": mqti.result,
                         "createTime": str(mqti.createTime),
                         "finishTime": str(mqti.finishTime),
-                        "initiator": user_name
+                        "initiator": user_name,
+                        "initiatorId": mqti.initiatorId
                     })
 
     elif int(stat) != -1 and int(initiator_id) == 0:
@@ -447,7 +449,8 @@ def key_caseReview_get():
                         "result": mqti.result,
                         "createTime": str(mqti.createTime),
                         "finishTime": str(mqti.finishTime),
-                        "initiator": user_name
+                        "initiator": user_name,
+                        "initiatorId": mqti.initiatorId
                     })
 
     elif int(stat) != -1 and int(initiator_id) != 0:
@@ -572,7 +575,8 @@ def key_caseReview_get():
                         "result": mqti.result,
                         "createTime": str(mqti.createTime),
                         "finishTime": str(mqti.finishTime),
-                        "initiator": user_name
+                        "initiator": user_name,
+                        "initiatorId": mqti.initiatorId
                     })
 
     return response_json
