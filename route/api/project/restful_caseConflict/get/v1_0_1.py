@@ -105,7 +105,8 @@ def createcase(case_id):
         "casePrecondition": None,
         "originalCaseId": None,
         "caseStep": [],
-        "ossPath": []
+        "ossPath": [],
+        "status": 0
     }
 
     # 查用例是否存在,构造基础信息
@@ -126,6 +127,7 @@ def createcase(case_id):
             case_json['level'] = mysql_case_info.level
             case_json['index'] = mysql_case_info.index
             case_json['originalCaseId'] = mysql_case_info.originalCaseId
+            case_json['status'] = mysql_case_info.status
 
     # 查询是否存在前置条件
     try:

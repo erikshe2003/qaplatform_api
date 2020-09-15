@@ -52,7 +52,7 @@ def key_caseReview_get():
     # 判断项目是否存在，并获取仓库id
     try:
         mysql_project_info = model_mysql_project.query.filter(
-            model_mysql_project.id == project_id,model_mysql_project.status==1
+            model_mysql_project.id == project_id,model_mysql_project.status !=-1
         ).first()
     except Exception as e:
 
