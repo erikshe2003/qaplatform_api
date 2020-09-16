@@ -75,7 +75,7 @@ def key_projectArchive_post():
         if mysql_exitdepositoryarc is None:
             pass
         else:
-            return route.error_msgs[201]['msg_exit_depositoryarc']
+            return route.error_msgs[201]['msg_exist_depositoryarc']
 
     # 判断用户是否拥有归档权限
     try:

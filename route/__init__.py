@@ -4,7 +4,6 @@ import flask
 import json
 import os
 import datetime
-import uuid
 
 from functools import wraps
 from urllib import parse
@@ -14,47 +13,65 @@ from handler.pool import mysqlpool
 
 from model.redis import model_redis_usertoken
 from model.redis import model_redis_apiauth
-from model.redis import model_redis_rolepermission
 
 from model.mysql import model_mysql_userinfo
 from model.mysql import model_mysql_rolepermission
 from model.mysql import model_mysql_apiinfo
-from model.mysql import model_mysql_functioninfo
 from model.mysql import model_mysql_functionorg
 
 
 # 201请求错误/301传参非法/500系统异常
 error_msgs = {
     201: {
-        'msg_no_conflict_code': {"code": 201, "msg": "冲突状态异常", "data": {}},
-        'msg_no_conflict': {"code": 201, "msg": "冲突记录不存在", "data": {}},
-        'msg_exit_depositoryarc': {"code": 201, "msg": "仓库已存在归档项目", "data": {}},
-        'msg_exit_arcrecode': {"code": 201, "msg": "归档记录已存在", "data": {}},
-        'msg_no_arcrecode': {"code": 201, "msg": "归档记录不存在", "data": {}},
-        'msg_no_reviewrecode': {"code": 201, "msg": "评审记录不存在", "data": {}},
-        'msg_no_casestep': {"code": 201, "msg": "测试步骤不存在", "data": {}},
-        'msg_case_exit': {"code": 201, "msg": "同名用例已存在", "data": {}},
-        'msg_column_cannot_operate': {"code": 201, "msg": "顶级目录不可操作", "data": {}},
-        'msg_no_projectmember': {"code": 201, "msg": "项目成员不存在", "data": {}},
-        'msg_no_project': {"code": 201, "msg": "项目不存在", "data": {}},
-        'msg_exit_project': {"code": 201, "msg": "项目已存在", "data": {}},
-        'msg_exit_depository': {"code": 201, "msg": "仓库已存在", "data": {}},
-        'msg_no_depository': {"code": 201, "msg": "仓库不存在", "data": {}},
-        'msg_exit_catalogue': {"code": 201, "msg": "目录已存在", "data": {}},
-        'msg_no_catalogue': {"code": 201, "msg": "目录不存在", "data": {}},
-        'msg_exit_subject': {"code": 201, "msg": "项目已存在", "data": {}},
-        'msg_no_subject': {"code": 201, "msg": "项目不存在", "data": {}},
+        # 通用
         'action_code_non': {"code": 201, "msg": "操作码不存在", "data": {}},
         'action_code_expire': {"code": 201, "msg": "操作码已过期", "data": {}},
         'action_code_error': {"code": 201, "msg": "操作码异常", "data": {}},
         'msg_before_login': {"code": 201, "msg": "请先登录账号", "data": {}},
-        'msg_data_error': {"code": 201, "msg": "数据非法", "data": {}},
-        'msg_illegal_format': {"code": 201, "msg": "数据格式非法", "data": {}},
+        'msg_user_is_admin': {"code": 201, "msg": "管理员账号禁止操作", "data": {}},
+        'msg_user_id_wrong': {"code": 201, "msg": "账号数据错误", "data": {}},
+        'msg_user_forbidden': {"code": 201, "msg": "账号已禁用", "data": {}},
+        'msg_user_exist': {"code": 201, "msg": "登录名已被注册", "data": {}},
+        'msg_user_cannot_operate': {"code": 201, "msg": "用户账号禁止操作", "data": {}},
         'msg_mail_exist': {"code": 201, "msg": "邮箱已被注册", "data": {}},
         'msg_new_password_inconformity': {"code": 201, "msg": "两次密码不一致", "data": {}},
         'msg_need_register': {"code": 201, "msg": "账户未激活", "data": {}},
         'msg_no_user': {"code": 201, "msg": "账户不存在", "data": {}},
         'msg_no_role': {"code": 201, "msg": "角色不存在", "data": {}},
+        'msg_no_role_auth_data': {"code": 201, "msg": "账户所属角色无权限数据", "data": {}},
+        'msg_no_task': {"code": 201, "msg": "任务不存在", "data": {}},
+        'msg_no_auth': {"code": 201, "msg": "账户无访问权限", "data": {}},
+        'msg_old_password_incorrect': {"code": 201, "msg": "旧密码输入错误", "data": {}},
+        'msg_data_error': {"code": 201, "msg": "数据非法", "data": {}},
+        'msg_illegal_format': {"code": 201, "msg": "数据格式非法", "data": {}},
+        'msg_role_is_admin': {"code": 201, "msg": "管理员角色禁止操作", "data": {}},
+        'msg_status_error': {"code": 201, "msg": "账户状态异常", "data": {}},
+        'msg_mail_send_fail': {"code": 201, "msg": "邮件发送失败", "data": {}},
+        'msg_operation_alias_not_exist': {"code": 201, "msg": "关键操作别名不存在", "data": {}},
+        # 仓库
+        'msg_no_column': {"code": 201, "msg": "目录不存在", "data": {}},
+        'msg_exist_depositoryarc': {"code": 201, "msg": "仓库已存在归档项目", "data": {}},
+        'msg_exist_depository': {"code": 201, "msg": "仓库已存在", "data": {}},
+        'msg_no_depository': {"code": 201, "msg": "仓库不存在", "data": {}},
+        'msg_column_cannot_operate': {"code": 201, "msg": "顶级目录不可操作", "data": {}},
+        'msg_exit_catalogue': {"code": 201, "msg": "目录已存在", "data": {}},
+        'msg_no_catalogue': {"code": 201, "msg": "目录不存在", "data": {}},
+        # 项目
+        'msg_no_project': {"code": 201, "msg": "项目不存在", "data": {}},
+        'msg_no_projectmember': {"code": 201, "msg": "项目成员不存在", "data": {}},
+        'msg_exit_project': {"code": 201, "msg": "项目已存在", "data": {}},
+        'msg_exit_subject': {"code": 201, "msg": "项目已存在", "data": {}},
+        'msg_no_subject': {"code": 201, "msg": "项目不存在", "data": {}},
+        # 用例
+        'msg_case_already_to_be_deleted': {"code": 201, "msg": "用例已为待删除状态", "data": {}},
+        'msg_no_conflict_code': {"code": 201, "msg": "冲突状态异常", "data": {}},
+        'msg_no_conflict': {"code": 201, "msg": "冲突记录不存在", "data": {}},
+        'msg_exit_arcrecode': {"code": 201, "msg": "归档记录已存在", "data": {}},
+        'msg_no_arcrecode': {"code": 201, "msg": "归档记录不存在", "data": {}},
+        'msg_no_reviewrecode': {"code": 201, "msg": "评审记录不存在", "data": {}},
+        'msg_no_casestep': {"code": 201, "msg": "测试步骤不存在", "data": {}},
+        'msg_case_exit': {"code": 201, "msg": "同名用例已存在", "data": {}},
+        # 接口测试计划
         'msg_no_plan': {"code": 201, "msg": "测试计划不存在", "data": {}},
         'msg_no_test_task': {"code": 201, "msg": "无测试任务", "data": {}},
         'msg_no_assign': {"code": 201, "msg": "无分配记录", "data": {}},
@@ -63,28 +80,15 @@ error_msgs = {
         'msg_no_version': {"code": 201, "msg": "未找到测试计划的版本", "data": {}},
         'msg_no_data': {"code": 201, "msg": "缺少快照数据", "data": {}},
         'msg_no_plan_type': {"code": 201, "msg": "测试计划类型不存在", "data": {}},
-        'msg_no_role_auth_data': {"code": 201, "msg": "账户所属角色无权限数据", "data": {}},
-        'msg_no_task': {"code": 201, "msg": "任务不存在", "data": {}},
-        'msg_no_auth': {"code": 201, "msg": "账户无访问权限", "data": {}},
-        'msg_not_temporary': {"code": 201, "msg": "非临时版本", "data": {}},
-        'msg_old_password_incorrect': {"code": 201, "msg": "旧密码输入错误", "data": {}},
-        'msg_plan_notopen': {"code": 201, "msg": "测试计划未开放", "data": {}},
-        'msg_plan_user_error': {"code": 201, "msg": "您不是这个测试计划的所有者", "data": {}},
-        'msg_plantype_error': {"code": 201, "msg": "自动化功能测试任务不支持查看此报告", "data": {}},
-        'msg_operation_alias_not_exist': {"code": 201, "msg": "关键操作别名不存在", "data": {}},
-        'msg_request_file_oversize': {"code": 201, "msg": "文件大小超出规定", "data": {}},
-        'msg_role_is_admin': {"code": 201, "msg": "管理员角色禁止操作", "data": {}},
-        'msg_status_error': {"code": 201, "msg": "账户状态异常", "data": {}},
         'msg_too_early': {"code": 201, "msg": "测试任务开始时间不能小于当前时间", "data": {}},
         'msg_tasktype_error': {"code": 201, "msg": "调试任务不支持查看此报告", "data": {}},
         'msg_task_time_error': {"code": 201, "msg": "测试任务结束时间不能小于开始时间且相隔不能小于10s", "data": {}},
-        'msg_user_is_admin': {"code": 201, "msg": "管理员账号禁止操作", "data": {}},
-        'msg_user_id_wrong': {"code": 201, "msg": "账号数据错误", "data": {}},
-        'msg_user_forbidden': {"code": 201, "msg": "账号已禁用", "data": {}},
-        'msg_user_exist': {"code": 201, "msg": "登录名已被注册", "data": {}},
-        'msg_user_cannot_operate': {"code": 201, "msg": "用户账号禁止操作", "data": {}},
         'msg_worker_not_exist': {"code": 201, "msg": "worker不存在", "data": {}},
-        'msg_mail_send_fail': {"code": 201, "msg": "邮件发送失败", "data": {}}
+        'msg_not_temporary': {"code": 201, "msg": "非临时版本", "data": {}},
+        'msg_plan_notopen': {"code": 201, "msg": "测试计划未开放", "data": {}},
+        'msg_plan_user_error': {"code": 201, "msg": "您不是这个测试计划的所有者", "data": {}},
+        'msg_plantype_error': {"code": 201, "msg": "自动化功能测试任务不支持查看此报告", "data": {}},
+        'msg_request_file_oversize': {"code": 201, "msg": "文件大小超出规定", "data": {}},
     },
     301: {
         'msg_request_params_illegal': {"code": 301, "msg": "传参格式非法", "data": {}},
@@ -112,169 +116,6 @@ error_msgs = {
         'msg_public_mail_login_fail': {"code": 500, "msg": "SMTP服务器连接失败", "data": {}}
     }
 }
-
-
-# 刷新redis缓存
-# apiAuth
-def refresh_redis_apiauth(role_id):
-    # 将缓存中的旧数据替换为新数据
-    try:
-        role_api_auth_data = mysqlpool.session.query(
-            model_mysql_rolepermission,
-            model_mysql_apiinfo.apiUrl,
-            model_mysql_rolepermission.hasPermission
-        ).join(
-            model_mysql_functionorg,
-            model_mysql_functionorg.functionId == model_mysql_rolepermission.functionId
-        ).join(
-            model_mysql_apiinfo,
-            model_mysql_apiinfo.apiId == model_mysql_functionorg.apiId
-        ).filter(
-            model_mysql_rolepermission.roleId == role_id
-        ).all()
-        logmsg = "数据库中角色权限信息修改后页面权限配置信息读取成功"
-        api_logger.debug(logmsg)
-    except Exception as e:
-        logmsg = "数据库中角色权限信息修改后页面权限配置信息读取失败，失败原因：" + repr(e)
-        api_logger.error(logmsg)
-    else:
-        """
-            拼接待缓存的权限数据
-            格式：
-            auth = {
-                roleId: {
-                    "/api/management/role/getRoleList.json": 1,
-                    "/api/management/role/searchRole.json": 0
-                }
-            }
-        """
-        auth = {}
-        for auth_data in role_api_auth_data:
-            auth[auth_data.apiUrl] = auth_data.hasPermission
-
-        # 然后将需缓存的内容缓存至redis的apiAuth
-        # 需缓存内容:
-        # key=roleId
-        # value=auth
-        try:
-            model_redis_apiauth.set(
-                role_id,
-                json.dumps(auth)
-            )
-        except Exception as e:
-            logmsg = "缓存库中角色权限信息写入失败，失败原因：" + repr(e)
-            api_logger.error(logmsg)
-
-
-# rolePermission
-def refresh_redis_rolepermission(role_id):
-    # 尝试去mysql中查询最新的角色权限配置数据
-    try:
-        role_page_permission_data = mysqlpool.session.query(
-            model_mysql_rolepermission,
-            model_mysql_rolepermission.functionId,
-            model_mysql_functioninfo.functionAlias
-        ).join(
-            model_mysql_functioninfo,
-            model_mysql_rolepermission.functionId == model_mysql_functioninfo.functionId
-        ).filter(
-            model_mysql_rolepermission.roleId == role_id,
-            model_mysql_functioninfo.functionType == 1,
-            model_mysql_rolepermission.hasPermission == 1
-        ).all()
-        logmsg = "数据库中角色权限信息修改后页面权限配置信息读取成功"
-        api_logger.debug(logmsg)
-    except Exception as e:
-        logmsg = "数据库中角色权限信息修改后页面权限配置信息读取失败，失败原因：" + repr(e)
-        api_logger.error(logmsg)
-    else:
-        """拼接待缓存的权限数据
-            格式：
-            permission = {
-                "1": {
-                    "id": 1,
-                    "alias": "AAA",
-                    "component": {
-                        "2": {
-                            "id": 2,
-                            "alias": "BBB"
-                        },
-                        "4": {
-                            "id": 4,
-                            "alias": "DDD"
-                        }
-                    }
-                }
-            }
-        """
-        permission = {}
-        for page_permission in role_page_permission_data:
-            permission[str(page_permission.functionId)] = {
-                "id": page_permission.functionId,
-                "alias": page_permission.functionAlias,
-                "component": {}
-            }
-            try:
-                role_component_permission_data = mysqlpool.session.query(
-                    model_mysql_rolepermission,
-                    model_mysql_rolepermission.functionId,
-                    model_mysql_functioninfo.functionAlias
-                ).join(
-                    model_mysql_functioninfo,
-                    model_mysql_rolepermission.functionId == model_mysql_functioninfo.functionId
-                ).filter(
-                    model_mysql_rolepermission.roleId == role_id,
-                    model_mysql_functioninfo.rootId == page_permission.functionId,
-                    model_mysql_functioninfo.functionType == 2,
-                    model_mysql_rolepermission.hasPermission == 1
-                ).all()
-                logmsg = "数据库中角色权限信息修改后功能权限配置信息读取成功"
-                api_logger.debug(logmsg)
-            except Exception as e:
-                logmsg = "数据库中角色权限信息修改后功能权限配置信息读取失败，失败原因：" + repr(e)
-                api_logger.error(logmsg)
-            else:
-                for component_permission in role_component_permission_data:
-                    permission[str(page_permission.functionId)]["component"][str(component_permission.functionId)] = {
-                        "id": component_permission.functionId,
-                        "alias": component_permission.functionAlias
-                    }
-        # 然后将需缓存的内容缓存至redis的rolePermission
-        # 需缓存内容:
-        # key=roleId
-        # value=permission
-        try:
-            model_redis_rolepermission.set(
-                role_id,
-                json.dumps(permission)
-            )
-        except Exception as e:
-            logmsg = "缓存库中角色权限信息写入失败，失败原因：" + repr(e)
-            api_logger.error(logmsg)
-
-
-# userToken
-def refresh_redis_usertoken(user_id, remember):
-    user_token = str(
-        uuid.uuid3(
-            uuid.NAMESPACE_DNS, str(user_id) + str(
-                datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            )
-        )
-    )
-
-    if remember is True:
-        t = (datetime.datetime.now() + datetime.timedelta(days=30)).strftime('%Y-%m-%d %H:%M:%S')
-    else:
-        t = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')
-    model_redis_usertoken.set(
-        user_id,
-        "{\"userToken\":\"" + user_token + "\"," +
-        "\"validTime\":\"" + t +
-        "\"}"
-    )
-
-    return user_token
 
 
 """
@@ -607,19 +448,13 @@ def check_get_parameter(*keys):
 
 
 def check_post_parameter(*keys):
-
     def decorator(func):
-
         @wraps(func)
-
         def wrapper(*args, **kwargs):
             request_url = flask.request.url
-
             api_logger.debug("URL:" + request_url + ".准备检查请求格式")
             try:
-
                 request_parameters = flask.request.json
-
             except Exception as e:
                 api_logger.error("URL:" + request_url + "格式检查失败，原因：" + repr(e))
                 return error_msgs[301]['msg_request_body_not_json']
@@ -628,7 +463,6 @@ def check_post_parameter(*keys):
                     return error_msgs[301]['msg_request_body_not_json']
             # 检查必传项目
             for key in keys:
-
                 # 如果缺少必传项
                 if key[0] not in request_parameters:
                     return error_msgs[302]['msg_request_params_incomplete']

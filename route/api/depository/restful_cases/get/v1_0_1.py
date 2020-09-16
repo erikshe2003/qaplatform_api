@@ -8,17 +8,6 @@ from handler.log import api_logger
 
 from model.mysql import model_mysql_case
 from model.mysql import model_mysql_depository
-"""
-    获取个人测试计划基础信息-api路由
-    ----校验
-            校验账户是否存在
-            校验账户操作令牌
-            校验账户所属角色是否有API操作权限
-            校验传参
-    ----操作
-            判断用例是否存在
-            返回操作结果
-"""
 
 
 @route.check_user
@@ -26,7 +15,7 @@ from model.mysql import model_mysql_depository
 @route.check_auth
 @route.check_get_parameter(
     ['depositoryId', int, 1, None],
-    ['columnId', int, 0, None],
+    ['columnId', int, 1, None],
     ['keyWord', str, None, None]
 )
 def key_cases_get():
