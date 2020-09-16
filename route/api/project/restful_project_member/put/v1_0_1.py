@@ -3,7 +3,6 @@
 import flask
 
 import route
-
 from handler.pool import mysqlpool
 
 from handler.log import api_logger
@@ -30,7 +29,7 @@ from model.mysql import model_mysql_userinfo
 @route.check_auth
 @route.check_post_parameter(
     ['id', int, 1, None],
-    ['userIds', str, 1, 50]
+    ['userIds', list, 1, None]
 
 )
 
@@ -61,8 +60,28 @@ def key_projectmember_put():
 
             return route.error_msgs[201]['msg_no_project']
 
+    # 先将所有非管理员成员删除
+    try:
+
+        mysql_Members_info1 = model_mysql_projectMember.query.filter(
+            model_mysql_projectMember.projectId == project_id, model_mysql_projectMember.type == 2
+        ).all()
+
+    except Exception as e:
+        api_logger.error("测试计划类型读取失败，失败原因：" + repr(e))
+        return route.error_msgs[500]['msg_db_error']
+    else:
+        if len(mysql_Members_info1) == 0:
+            pass
+        else:
+            for xq in mysql_Members_info1:
+
+                xq.status = -1
+            mysqlpool.session.commit()
+
     #批量添加成员
-    member=projectmembers_id.split(',')
+    # member=projectmembers_id.split(',')
+    member=projectmembers_id
     for x in member:
 
         # 查询用户是否存在且合法
@@ -77,10 +96,10 @@ def key_projectmember_put():
             return route.error_msgs[500]['msg_db_error']
         else:
             if mysql_user_info is None:
-               pass
-
-            else:
                 continue
+            else:
+                pass
+
 
 
         # 查询用户是否已经是项目成员
@@ -106,6 +125,7 @@ def key_projectmember_put():
                 mysqlpool.session.add(new_projectMember_info)
                 mysqlpool.session.commit()
             else:
+
                 mysql_projectMember_info.status=1
                 mysqlpool.session.commit()
 

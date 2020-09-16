@@ -31,6 +31,7 @@ def task_init_log_report(ws):
         url = 'taskInitLogReport.socket'
         api_logger.debug('监听来自客户端的首次请求内容...')
         re_data = ws.receive()
+
         api_logger.debug('接收到来自客户端的首次请求内容')
         # 校验传参
         re_json_data = check_parameter(
@@ -40,6 +41,7 @@ def task_init_log_report(ws):
             ['taskId', int, None, None],
             ['per', int, None, None]
         )
+
         if not re_json_data:
             api_logger.error('必传参数检查失败')
             ws.send('fail')
@@ -56,6 +58,7 @@ def task_init_log_report(ws):
             ws.send('fail')
             ws.close()
         else:
+
             api_logger.debug('测试任务:%stoken检查成功' % re_task_id)
 
         # 校验账户状态
@@ -64,6 +67,7 @@ def task_init_log_report(ws):
             ws.send('fail')
             ws.close()
         else:
+
             api_logger.debug('测试任务:%s账户状态检查成功' % re_task_id)
 
         # 校验权限

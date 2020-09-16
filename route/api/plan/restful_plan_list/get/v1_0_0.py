@@ -28,7 +28,7 @@ from model.mysql import model_mysql_userinfo
 
 @route.check_user
 @route.check_token
-@route.check_auth
+# @route.check_auth
 @route.check_get_parameter(
     ['userId', int, 1, None],
     ['sortType', int, 1, None],
@@ -110,7 +110,8 @@ def plan_list_get():
             model_mysql_userinfo.userId.label('userId'),
             model_mysql_userinfo.userEmail.label('userEmail'),
             model_mysql_userinfo.userNickName.label('userNickName'),
-            model_mysql_tablesnap.snapAddTime.label('snapAddTime')
+            model_mysql_tablesnap.snapAddTime.label('snapAddTime'),
+            model_mysql_planinfo.status.label('status')
         ).outerjoin(
             model_mysql_userinfo,
             model_mysql_userinfo.userId == model_mysql_planinfo.ownerId
@@ -118,14 +119,16 @@ def plan_list_get():
             model_mysql_tablesnap,
             and_(
                 model_mysql_planinfo.planId == model_mysql_tablesnap.planId,
-                model_mysql_tablesnap.status == 1
+                model_mysql_tablesnap.status == 1,
+                model_mysql_planinfo.status ==1
             )
         )
+
         if key_word == '':
             mysql_plan_list = mysql_plan_list_query.filter(
                 model_mysql_userinfo.userId == user_id,
                 model_mysql_planinfo.status == 1,
-                model_mysql_planinfo.planOpenLevel < open_level
+                # model_mysql_planinfo.planOpenLevel < open_level
             ).order_by(
                 sort_type_condition
             ).limit(
@@ -150,6 +153,7 @@ def plan_list_get():
         api_logger.error("测试计划数据读取失败，失败原因：" + repr(e))
         return route.error_msgs[500]['msg_db_error']
     else:
+
         for data in mysql_plan_list:
             # noinspection PyTypeChecker
             response_json['data']['plan_list'].append({

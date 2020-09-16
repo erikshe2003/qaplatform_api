@@ -28,7 +28,7 @@ from model.mysql import model_mysql_userinfo
 
 @route.check_user
 @route.check_token
-@route.check_auth
+# @route.check_auth
 @route.check_get_parameter(
     ['planId', int, 1, None]
 )
@@ -62,7 +62,8 @@ def plan_get():
     # 查询测试计划基础信息，并取出所属者账户id
     try:
         mysql_plan_info = model_mysql_planinfo.query.filter(
-            model_mysql_planinfo.planId == plan_id
+            model_mysql_planinfo.planId == plan_id,
+            model_mysql_planinfo.status == 1
         ).first()
     except Exception as e:
         api_logger.error("model_mysql_planinfo数据读取失败，失败原因：" + repr(e))
@@ -80,7 +81,8 @@ def plan_get():
             response_json['data']['openLevel'] = mysql_plan_info.planOpenLevel
 
     # 根据测试计划开放级别以及操作者id/计划拥有者id判断返回内容
-    if request_user_id == plan_user_id:
+    # 这里类型比较有个bug，类型不同
+    if int(request_user_id) == plan_user_id:
         pass
     else:
         if mysql_plan_info.planOpenLevel in (1, 2):

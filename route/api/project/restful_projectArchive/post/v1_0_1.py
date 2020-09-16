@@ -34,7 +34,7 @@ from model.mysql import model_mysql_projectArchivePendingCase
 @route.check_auth
 @route.check_post_parameter(
 
-    ['id', str, None, None]
+    ['id', int, None, None]
 )
 def key_projectArchive_post():
     # 初始化返回内容

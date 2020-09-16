@@ -4,6 +4,7 @@ import flask
 
 import route
 
+from handler.pool import mysqlpool
 
 from handler.log import api_logger
 
@@ -30,7 +31,7 @@ from model.mysql import model_mysql_roleinfo
 @route.check_auth
 @route.check_get_parameter(
     ['roleId', int, 1, None],
-    ['nickname', str, None, None]
+    ['nickname', str, None, None],
 )
 def key_projectroleUser_get():
     # 初始化返回内容
@@ -43,15 +44,32 @@ def key_projectroleUser_get():
     # 取出入参
 
     role_id = flask.request.args['roleId']
-
+    # project_id = flask.request.args['projectId']
     keyword = flask.request.args['nickname']
+
+    # #查询已经在项目成员
+    # mlist=[]
+    # try:
+    #     mysql_projectMember_info = model_mysql_projectMember.query.filter(
+    #         model_mysql_projectMember.projectId == project_id, model_mysql_userinfo.userStatus == 1
+    #     ).all()
+    #
+    # except Exception as e:
+    #     api_logger.error("查询失败原因：" + repr(e))
+    #     return route.error_msgs[500]['msg_db_error']
+    # else:
+    #     if len(mysql_projectMember_info)==0:
+    #         pass
+    #     else:
+    #         for xq in mysql_projectMember_info:
+    #             mlist.append(xq.id)
+
 
     # 查询角色基础信息
     try:
         mysql_role_info = model_mysql_roleinfo.query.filter(
             model_mysql_roleinfo.roleId== role_id,model_mysql_roleinfo.roleStatus==1
         ).first()
-
 
     except Exception as e:
         api_logger.error("model_mysql_depository，失败原因：" + repr(e))
@@ -68,6 +86,7 @@ def key_projectroleUser_get():
             mysql_roleUser_info = model_mysql_userinfo.query.filter(
                 model_mysql_userinfo.userRoleId == role_id, model_mysql_userinfo.userStatus == 1
             ).all()
+
 
 
         except Exception as e:

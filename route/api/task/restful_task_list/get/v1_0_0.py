@@ -25,7 +25,7 @@ from model.mysql import model_mysql_taskinfo
 
 @route.check_token
 @route.check_user
-@route.check_auth
+# @route.check_auth
 @route.check_get_parameter(
     ['page', int, 1, None],
     ['planId', int, 1, None],

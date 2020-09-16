@@ -26,7 +26,7 @@ from model.mysql import model_mysql_userinfo
 
 @route.check_user
 @route.check_token
-@route.check_auth
+# @route.check_auth
 @route.check_delete_parameter(
     ['planId', int, 1, None]
 )
@@ -40,17 +40,18 @@ def plan_delete():
 
     user_id = None
     # 取出必传入参
-    mail_address = flask.request.headers['Mail']
+    user_id = flask.request.headers['UserId']
     plan_id = int(flask.request.args['planId'])
 
     # 查询mysql中账户信息，并取出账户id
     try:
         mysql_userinfo = model_mysql_userinfo.query.filter(
-            model_mysql_userinfo.userEmail == mail_address
+            model_mysql_userinfo.userId == user_id
         ).first()
-        api_logger.debug(mail_address + "的账户基础信息读取成功")
+        api_logger.debug(user_id + "的账户基础信息读取成功")
     except Exception as e:
-        api_logger.error(mail_address + "的账户基础信息读取失败，失败原因：" + repr(e))
+        api_logger.error(user_id + "的账户基础信息读取失败，失败原因：" + repr(e))
+        print(11111)
         return route.error_msgs[500]['msg_db_error']
     else:
         if mysql_userinfo is None:
@@ -64,7 +65,8 @@ def plan_delete():
             model_mysql_planinfo.planId == plan_id
         ).first()
     except Exception as e:
-        api_logger.error(mail_address + "的测试计划信息读取失败，失败原因：" + repr(e))
+        api_logger.error(user_id + "的测试计划信息读取失败，失败原因：" + repr(e))
+        print(22222)
         return route.error_msgs[500]['msg_db_error']
     else:
         # 只有计划本人才有权限删除该计划
@@ -74,6 +76,8 @@ def plan_delete():
                 mysqlpool.session.commit()
             except Exception as e:
                 api_logger.error("个人接口测试计划删除失败，失败原因：" + repr(e))
+
+                print(3333)
                 return route.error_msgs[500]['msg_db_error']
         elif user_id != mysql_planinfo.ownerId:
             return route.error_msgs[201]['msg_plan_user_error']
