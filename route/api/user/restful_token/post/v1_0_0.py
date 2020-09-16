@@ -67,7 +67,25 @@ def token_post():
         return ApiError.requestfail_error("登陆密码错误")
 
     # 刷新token
-    response_json["data"]["access_token"] = route.refresh_redis_usertoken(uinfo_mysql.userId, requestvalue_check)
+    user_token = str(
+        uuid.uuid3(
+            uuid.NAMESPACE_DNS, str(uinfo_mysql.userId) + str(
+                datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            )
+        )
+    )
+
+    if requestvalue_check:
+        t = (datetime.datetime.now() + datetime.timedelta(days=30)).strftime('%Y-%m-%d %H:%M:%S')
+    else:
+        t = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')
+    model_redis_usertoken.set(
+        uinfo_mysql.userId,
+        "{\"userToken\":\"" + user_token + "\"," +
+        "\"validTime\":\"" + t +
+        "\"}"
+    )
+    response_json["data"]["access_token"] = user_token
 
     response_json["data"]["user_id"] = uinfo_mysql.userId
 

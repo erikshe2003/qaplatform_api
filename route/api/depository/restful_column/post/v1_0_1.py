@@ -12,20 +12,6 @@ from sqlalchemy.sql import func
 from model.mysql import model_mysql_case
 from model.mysql import model_mysql_depository
 
-"""
-    获取个人测试计划基础信息-api路由
-    ----校验
-            校验账户是否存在
-            校验账户操作令牌
-            校验账户所属角色是否有API操作权限
-            校验传参
-    ----操作
-            先判断仓库是否有效
-            再判断关联目录是否有效
-            然后判断目录是否存在
-            最后返回新增结果
-"""
-
 
 @route.check_user
 @route.check_token

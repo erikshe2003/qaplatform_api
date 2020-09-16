@@ -68,7 +68,7 @@ def key_depository_post():
         return route.error_msgs[500]['msg_db_error']
     else:
         if mysql_depository is not None:
-            return route.error_msgs[201]['msg_exit_depository']
+            return route.error_msgs[201]['msg_exist_depository']
 
     # 新增仓库基础信息
     new_depository_info = model_mysql_depository(

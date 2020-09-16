@@ -1,27 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import flask
-
 import route
-
 
 from handler.log import api_logger
 from handler.pool import mysqlpool
 
 from model.mysql import model_mysql_case
 from model.mysql import model_mysql_depository
-
-"""
-    获取个人测试计划基础信息-api路由
-    ----校验
-            校验账户是否存在
-            校验账户操作令牌
-            校验账户所属角色是否有API操作权限
-            校验传参
-    ----操作
-            判断测试仓库是否存在
-            返回测试仓库基础信息
-"""
 
 
 @route.check_user
@@ -37,8 +23,8 @@ def key_column_get():
         "msg": "数据获取成功",
         "data": {}
     }
-    # 取出入参
 
+    # 取出入参
     depository_id = int(flask.request.args['id'])
 
     # 查询仓库是否存在
@@ -77,9 +63,22 @@ def key_column_get():
         api_logger.error("model_mysql_depository，失败原因：" + repr(e))
         return route.error_msgs[500]['msg_db_error']
     else:
-        if len(mysql_column_info) == 0:
-            return response_json
-        else:
+        # 将第一个值选中
+        response_json['data'] = {
+            'id': 0,
+            'title': '全部目录',
+            'depositoryId': depository_id,
+            'columnId': 0,
+            'index': 0,
+            'columnLevel': 0,
+            'type': 1,
+            'userId': 0,
+            'expand': True,
+            'selected': False,
+            'contextmenu': True,
+            'children': []
+        }
+        if len(mysql_column_info) != 0:
             # 修改返回数据的结构
             column_info = []
             for mci in mysql_column_info:
@@ -111,20 +110,7 @@ def key_column_get():
                 return tree
 
             # 将第一个值选中
-            response_json['data'] = {
-                'id': 0,
-                'title': '全部目录',
-                'depositoryId': depository_id,
-                'columnId': 0,
-                'index': 0,
-                'columnLevel': 0,
-                'type': 1,
-                'userId': 0,
-                'expand': True,
-                'selected': False,
-                'contextmenu': True,
-                'children': recurse_list_to_tree(0, {})
-            }
+            response_json['data']['children'] = recurse_list_to_tree(0, {})
 
     # 最后返回内容
     return response_json
