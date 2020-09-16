@@ -102,7 +102,7 @@ def key_caseReview_put():
                         mysql_reviewrecord_info = model_mysql_projectReviewRecord.query.filter(
                             model_mysql_projectReviewRecord.caseId == mqcs.id,
                             model_mysql_projectReviewRecord.reviewerId == request_user_id,
-                            model_mysql_projectReviewRecord.result == 0
+                            model_mysql_projectReviewRecord.result == 1
                         ).first()
                     except Exception as e:
                         api_logger.error("数据读取失败，失败原因：" + repr(e))
@@ -164,7 +164,7 @@ def key_caseReview_put():
             mysql_reviewrecord_info = model_mysql_projectReviewRecord.query.filter(
                 model_mysql_projectReviewRecord.caseId == case_id,
                 model_mysql_projectReviewRecord.reviewerId == request_user_id,
-                model_mysql_projectReviewRecord.result == 0
+                model_mysql_projectReviewRecord.result == 1
             ).first()
         except Exception as e:
             api_logger.error("数据读取失败，失败原因：" + repr(e))

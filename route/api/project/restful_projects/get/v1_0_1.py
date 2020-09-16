@@ -35,29 +35,57 @@ def key_projects_get():
     # 根据是否管理
     # true返回管理的项目
     # false返回参与的项目
-    mysql_project_list_query = mysqlpool.session.query(
-        model_mysql_project,
-        model_mysql_project.id.label('id'),
-        model_mysql_project.name.label("title"),
-        model_mysql_project.description.label("description"),
-        model_mysql_project.userId.label("userId"),
-        model_mysql_project.status.label("status"),
-        model_mysql_userinfo.userNickName.label("nickName"),
-        model_mysql_userinfo.userHeadIconUrl.label("iconUrl"),
-        model_mysql_project.coverOssPath.label("coverOssPath"),
-        model_mysql_project.createTime.label("createTime")
-    ).join(
-        model_mysql_projectMember,
-        model_mysql_project.id == model_mysql_projectMember.projectId
-    ).join(
-        model_mysql_userinfo,
-        model_mysql_projectMember.userId == model_mysql_userinfo.userId
-    ).filter(
-        model_mysql_project.status != -1,
-        model_mysql_projectMember.status == 1,
-        model_mysql_projectMember.userId == request_userid,
-        model_mysql_projectMember.type == 1 if request_admin else 2
-    )
+    if str(request_admin)=='true':
+
+        mysql_project_list_query = mysqlpool.session.query(
+            model_mysql_project,
+            model_mysql_project.id.label('id'),
+            model_mysql_project.name.label("title"),
+            model_mysql_project.description.label("description"),
+            model_mysql_project.userId.label("userId"),
+            model_mysql_project.status.label("status"),
+            model_mysql_userinfo.userNickName.label("nickName"),
+            model_mysql_userinfo.userHeadIconUrl.label("iconUrl"),
+            model_mysql_project.coverOssPath.label("coverOssPath"),
+            model_mysql_project.createTime.label("createTime")
+        ).join(
+            model_mysql_projectMember,
+            model_mysql_project.id == model_mysql_projectMember.projectId
+        ).join(
+            model_mysql_userinfo,
+            model_mysql_projectMember.userId == model_mysql_userinfo.userId
+        ).filter(
+            model_mysql_project.status != -1,
+            model_mysql_projectMember.status == 1,
+            model_mysql_projectMember.userId == request_userid,
+            model_mysql_projectMember.type == 1
+        ).order_by(model_mysql_project.createTime.desc())
+    else:
+
+        mysql_project_list_query = mysqlpool.session.query(
+            model_mysql_project,
+            model_mysql_project.id.label('id'),
+            model_mysql_project.name.label("title"),
+            model_mysql_project.description.label("description"),
+            model_mysql_project.userId.label("userId"),
+            model_mysql_project.status.label("status"),
+            model_mysql_userinfo.userNickName.label("nickName"),
+            model_mysql_userinfo.userHeadIconUrl.label("iconUrl"),
+            model_mysql_project.coverOssPath.label("coverOssPath"),
+            model_mysql_project.createTime.label("createTime")
+        ).join(
+            model_mysql_projectMember,
+            model_mysql_project.id == model_mysql_projectMember.projectId
+        ).join(
+            model_mysql_userinfo,
+            model_mysql_projectMember.userId == model_mysql_userinfo.userId
+        ).filter(
+            model_mysql_project.status != -1,
+            model_mysql_projectMember.status == 1,
+            model_mysql_projectMember.userId == request_userid,
+            model_mysql_projectMember.type.in_([1,2])
+        ).order_by(model_mysql_project.createTime.desc())
+
 
     if request_keyword != '':
         mysql_project_list_query = mysql_project_list_query.filter(

@@ -52,7 +52,7 @@ def key_caseReview_get():
     # 判断项目是否存在，并获取仓库id
     try:
         mysql_project_info = model_mysql_project.query.filter(
-            model_mysql_project.id == project_id,model_mysql_project.status==1
+            model_mysql_project.id == project_id,model_mysql_project.status !=-1
         ).first()
     except Exception as e:
 
@@ -78,12 +78,14 @@ def key_caseReview_get():
 
     #查询满足条件的记录
     if int(stat)==-1 and  int(initiator_id)==0:
+
         try:
             mysql_reviews_info = model_mysql_projectReviewRecord.query.filter(
                 model_mysql_projectReviewRecord.projectId == project_id,
                 model_mysql_projectReviewRecord.reviewerId == request_user_id,
 
             ).order_by(model_mysql_projectReviewRecord.createTime).all()
+
         except Exception as e:
 
             api_logger.error("读取失败，失败原因：" + repr(e))
@@ -196,8 +198,10 @@ def key_caseReview_get():
                         "id": mqti.id,
                         "caseInfo": case_info,
                         "result": mqti.result,
+                        "createTime": str(mqti.createTime),
                         "finishTime": str(mqti.finishTime),
-                        "initiator": user_name
+                        "initiator": user_name,
+                        "initiatorId": mqti.initiatorId
                     })
     elif int(stat)==-1 and int(initiator_id)!=0:
         try:
@@ -318,8 +322,10 @@ def key_caseReview_get():
                         "id": mqti.id,
                         "caseInfo": case_info,
                         "result": mqti.result,
+                        "createTime": str(mqti.createTime),
                         "finishTime": str(mqti.finishTime),
-                        "initiator": user_name
+                        "initiator": user_name,
+                        "initiatorId": mqti.initiatorId
                     })
 
     elif int(stat) != -1 and int(initiator_id) == 0:
@@ -441,8 +447,10 @@ def key_caseReview_get():
                         "id": mqti.id,
                         "caseInfo": case_info,
                         "result": mqti.result,
+                        "createTime": str(mqti.createTime),
                         "finishTime": str(mqti.finishTime),
-                        "initiator": user_name
+                        "initiator": user_name,
+                        "initiatorId": mqti.initiatorId
                     })
 
     elif int(stat) != -1 and int(initiator_id) != 0:
@@ -565,8 +573,10 @@ def key_caseReview_get():
                         "id": mqti.id,
                         "caseInfo": case_info,
                         "result": mqti.result,
+                        "createTime": str(mqti.createTime),
                         "finishTime": str(mqti.finishTime),
-                        "initiator": user_name
+                        "initiator": user_name,
+                        "initiatorId": mqti.initiatorId
                     })
 
     return response_json

@@ -6,7 +6,7 @@ import struct
 import os
 import random
 import datetime
-
+import time
 from handler.pool import mysqlpool
 from handler.log import sys_logger
 from handler.socket import dataFormat
@@ -61,6 +61,7 @@ def deploy(worker_base_file):
             msg = 'workerId:%d,接收到action返回' % the_worker_id
             sys_logger.debug(msg)
             worker_response = worker_response.decode()
+
             if worker_response == 'Success':
                 msg = 'workerId:%d,准备发送basedata...' % the_worker_id
                 sys_logger.debug(msg)
@@ -173,6 +174,7 @@ def deploy(worker_base_file):
                         else:
                             msg = '测试任务下发记录更新成功'
                             sys_logger.debug(msg)
+
                             return False, 'workerId:%d,basedata处理失败:%s' % (
                                 the_worker_id,
                                 worker_response.split('.')[1] if len(

@@ -24,7 +24,7 @@ from model.mysql import model_mysql_workerinfo
 
 @route.check_token
 @route.check_user
-@route.check_auth
+# @route.check_auth
 @route.check_get_parameter(
     ['taskId', int, 1, None]
 )
