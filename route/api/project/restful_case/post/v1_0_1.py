@@ -31,7 +31,7 @@ def key_case_post():
     # 初始化返回内容
     response_json = {
         "code": 200,
-        "msg": "数据新增成功",
+        "msg": "新增用例成功",
         "data": {}
     }
 
@@ -107,14 +107,15 @@ def key_case_post():
     ))
     # 步骤
     for rs in request_steps:
-        if 'content' not in rs or 'expectation' not in rs or 'index' not in rs:
+        if 'content' not in rs or 'expectation' not in rs:
             return route.error_msgs[302]['msg_request_params_incomplete']
-        elif type(rs['content']) is not str or type(rs['expectation']) is not str or type(rs['index']) is not int:
-            return route.error_msgs[302]['msg_request_params_illegal']
+        elif type(rs['content']) is not str or type(rs['expectation']) is not str:
+            return route.error_msgs[301]['msg_request_params_illegal']
+        elif rs['content'] == '' or rs['expectation'] == '':
+            return route.error_msgs[301]['msg_request_params_illegal']
         else:
             mysqlpool.session.add(model_mysql_caseStep(
                 caseId=new_case_info.id,
-                index=rs['index'],
                 content=rs['content'],
                 expectation=rs['expectation'],
                 status=1,
@@ -125,7 +126,9 @@ def key_case_post():
         if 'ossPath' not in rf or 'fileAlias' not in rf:
             return route.error_msgs[302]['msg_request_params_incomplete']
         elif type(rf['ossPath']) is not str or type(rf['fileAlias']) is not str:
-            return route.error_msgs[302]['msg_request_params_illegal']
+            return route.error_msgs[301]['msg_request_params_illegal']
+        elif rf['ossPath'] == '' or rf['fileAlias'] == '':
+            return route.error_msgs[301]['msg_request_params_illegal']
         else:
             mysqlpool.session.add(model_mysql_caseFile(
                 ossPath=rf['ossPath'],

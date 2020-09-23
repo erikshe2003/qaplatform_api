@@ -5,14 +5,9 @@ import route
 
 from sqlalchemy import or_, and_
 
-from handler.pool import mysqlpool
 from handler.log import api_logger
 
-from model.mysql import model_mysql_casePrecondition
 from model.mysql import model_mysql_case
-from model.mysql import model_mysql_caseFile
-from model.mysql import model_mysql_caseStep
-from model.mysql import model_mysql_project
 
 
 @route.check_user
@@ -21,7 +16,8 @@ from model.mysql import model_mysql_project
 @route.check_get_parameter(
     ['projectId', int, 1, None],
     ['columnId', int, 1, None],
-    ['keyWord', str, None, None]
+    ['keyWord', str, None, None],
+    ['thisProject', int, 0, 1]
 )
 def key_cases_get():
     # 初始化返回内容
@@ -32,9 +28,10 @@ def key_cases_get():
     }
 
     # 取出必传入参
-    project_id = flask.request.args['projectId']
-    column_id = flask.request.args['columnId']
+    project_id = int(flask.request.args['projectId'])
+    column_id = int(flask.request.args['columnId'])
     key_word = flask.request.args['keyWord']
+    only_project_self = int(flask.request.args['thisProject'])
 
     # 判断目录是否存在，并获取仓库id
     try:

@@ -22,11 +22,6 @@ class caseStep(mysqlpool.Model):
         type_=TINYINT(4),
         nullable=False
     )
-    index = mysqlpool.Column(
-        name="index",
-        type_=TINYINT(4),
-        nullable=True
-    )
     content = mysqlpool.Column(
         name="content",
         type_=TEXT(1000),
